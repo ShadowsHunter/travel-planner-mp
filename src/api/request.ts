@@ -6,7 +6,8 @@
 
 const TOKEN_KEY = 'travel_token'
 const USER_KEY = 'travel_user'
-const BASE_URL = 'http://localhost:3000/api'
+// dev 时换回 'http://localhost:3000/api'
+const BASE_URL = 'https://qinzilv.cn/api'
 
 interface RequestOptions {
   url: string
