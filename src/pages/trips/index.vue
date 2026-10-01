@@ -113,11 +113,13 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
+import { storeToRefs } from 'pinia'
 import { useTripStore } from '../../stores/trip'
 import { formatDateRange, coverGradient, tripDays } from '../../utils/trip'
 
 const tripStore = useTripStore()
-const { trips, loading } = tripStore
+// store 是 reactive 对象，直接解构会丢失响应性（列表白屏的根因），必须 storeToRefs
+const { trips, loading } = storeToRefs(tripStore)
 
 const showCreate = ref(false)
 const form = reactive({

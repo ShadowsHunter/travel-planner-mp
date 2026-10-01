@@ -10,6 +10,27 @@ export function parseLocalDate(s: string): Date {
   return new Date(s)
 }
 
+/** 当前本地时区日期 'YYYY-MM-DD'。替代 toISOString().slice(0,10)（UTC 8 小时偏移 bug）。 */
+export function todayLocal(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/** 日期字符串加 n 天（跨月/跨年安全），返回 'YYYY-MM-DD'。非法输入原样返回。 */
+export function addDays(dateStr: string, n: number): string {
+  const d = parseLocalDate(dateStr)
+  if (Number.isNaN(d.getTime())) return dateStr
+  d.setDate(d.getDate() + n)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/** 短日期 'M/D'（详情页 Day 标签、条目时间等）。非法输入原样返回。 */
+export function formatShortDate(dateStr: string): string {
+  const d = parseLocalDate(dateStr)
+  if (Number.isNaN(d.getTime())) return dateStr
+  return `${d.getMonth() + 1}/${d.getDate()}`
+}
+
 /** 计算行程天数（含首尾，start..end 闭区间）。非法/反向区间返回 0。 */
 export function tripDays(startDate: string, endDate: string): number {
   const s = parseLocalDate(startDate)

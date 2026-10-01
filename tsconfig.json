@@ -12,7 +12,7 @@
     "skipLibCheck": true,
     "noEmit": true,
     "baseUrl": ".",
-    "types": ["@dcloudio/types"]
+    "types": ["@dcloudio/types", "vite/client"]
   },
   "include": ["src/**/*.ts", "src/**/*.vue", "src/**/*.d.ts"]
 }

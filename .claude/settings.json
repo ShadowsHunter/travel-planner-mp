@@ -12,7 +12,7 @@
           },
           {
             "type": "command",
-            "command": "f=$(node -e \"const d=JSON.parse(require('fs').readFileSync(0,'utf8'));process.stdout.write(d.tool_input?.file_path||d.tool_response?.filePath||'')\"); case \"$f\" in *.ts|*.vue) out=$(node_modules/.bin/tsc --noEmit 2>/dev/null);; esac; if [ -n \"$out\" ]; then node -e \"process.stdout.write(JSON.stringify({decision:'block',reason:'typecheck 失败 (tsc --noEmit):\\n'+process.argv[1]}))\" \"$out\"; fi",
+            "command": "f=$(node -e \"const d=JSON.parse(require('fs').readFileSync(0,'utf8'));process.stdout.write(d.tool_input?.file_path||d.tool_response?.filePath||'')\"); case \"$f\" in *.ts|*.vue) out=$(node_modules/.bin/vue-tsc --noEmit 2>/dev/null);; esac; if [ -n \"$out\" ]; then node -e \"process.stdout.write(JSON.stringify({decision:'block',reason:'typecheck 失败 (vue-tsc --noEmit):\\n'+process.argv[1]}))\" \"$out\"; fi",
             "timeout": 120,
             "statusMessage": "typecheck project"
           }
