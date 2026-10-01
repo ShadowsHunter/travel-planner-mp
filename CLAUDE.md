@@ -26,7 +26,7 @@ uni-app（Vue 3 + TS + Pinia）编译微信小程序（仅 mp-weixin 目标）�
 
 - 请求体多余字段直接 400（whitelist + forbidNonWhitelisted），只发接口文档里有的字段。
 - 响应里 lat/lng 是 7 位小数字符串，地图标记需 Number() 转换。
-- PUT /trips 改日期范围会删除并重建 days（原有 item 丢失）。
+- PUT /trips 改日期范围：增补缺失日期的天、删新范围外的空白天；**含条目的天保留**（2026-10-01 实测修正，详见 docs/API.md §2.4）。
 - 行程软删除，item 硬删除。
 - 401 由 request.ts 统一拦截：清 travel_token/travel_user 并 uni.reLaunch 到 /pages/login/index。
 

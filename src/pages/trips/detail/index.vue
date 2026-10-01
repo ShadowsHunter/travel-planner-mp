@@ -15,6 +15,23 @@
       <view v-else class="header-info">
         <text class="header-title">行程详情</text>
       </view>
+      <!-- ⋯ 菜单：自定义浮层（P5 分享需承载 open-type=share 按钮，showActionSheet 做不到） -->
+      <view v-if="trip" class="menu-wrap">
+        <view class="menu-btn" @tap="showHeaderMenu = !showHeaderMenu">
+          <text class="menu-btn-icon">⋯</text>
+        </view>
+        <view v-if="showHeaderMenu" class="menu-mask" @tap="showHeaderMenu = false" />
+        <view v-if="showHeaderMenu" class="menu-pop">
+          <view class="menu-row" @tap="goEditTrip">
+            <text class="menu-row-icon">✏️</text>
+            <text class="menu-row-text">编辑行程</text>
+          </view>
+          <view class="menu-row" @tap="confirmDeleteTrip">
+            <text class="menu-row-icon">🗑️</text>
+            <text class="menu-row-text danger">删除行程</text>
+          </view>
+        </view>
+      </view>
     </view>
 
     <!-- 加载/错误 -->
@@ -305,7 +322,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { useTripStore } from '../../../stores/trip'
 import { formatDateRange, formatShortDate } from '../../../utils/trip'
@@ -329,6 +346,7 @@ const searchQuery = ref('')
 const searchResults = ref<PoiResult[]>([])
 const selectedPoi = ref<PoiResult | null>(null)
 const editingItemId = ref('')
+const showHeaderMenu = ref(false)
 
 const trip = computed(() => tripStore.current)
 const days = computed<TripDay[]>(() => trip.value?.days ?? [])
@@ -428,6 +446,18 @@ async function loadTrip(id: string) {
   }
 }
 
+// 编辑行程改日期后 days 会被增删重建，选中 day 失效时重置视图状态
+watch(
+  () => days.value.map((d) => d.id).join(','),
+  () => {
+    if (days.value.length && !days.value.some((d) => d.id === activeDayId.value)) {
+      activeDayId.value = days.value[0].id
+      sortMode.value = false
+      highlightedItemId.value = null
+    }
+  },
+)
+
 function selectDay(dayId: string) {
   activeDayId.value = dayId
   sortMode.value = false
@@ -436,6 +466,33 @@ function selectDay(dayId: string) {
 
 function goBack() {
   uni.navigateBack()
+}
+
+/** ⋯ 菜单：编辑行程（完整路径，create 页双模式） */
+function goEditTrip() {
+  showHeaderMenu.value = false
+  uni.navigateTo({ url: `/pages/trips/create?id=${tripId.value}` })
+}
+
+/** ⋯ 菜单：删除行程（软删除，级联 days） */
+function confirmDeleteTrip() {
+  showHeaderMenu.value = false
+  if (!trip.value) return
+  uni.showModal({
+    title: '删除行程',
+    content: `「${trip.value.title}」及其全部条目将被删除，此操作不可恢复。`,
+    confirmColor: '#E53935',
+    success: async (res) => {
+      if (!res.confirm) return
+      try {
+        await tripStore.removeTrip(tripId.value)
+        uni.showToast({ title: '已删除', icon: 'success' })
+        uni.navigateBack()
+      } catch {
+        uni.showToast({ title: '删除失败', icon: 'none' })
+      }
+    },
+  })
 }
 
 function shortDate(date: string): string {
@@ -626,6 +683,64 @@ function resetAddForm() {
 .meta-item {
   font-size: 22rpx;
   color: #6b6560;
+}
+
+/* ── ⋯ 菜单 ── */
+.menu-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.menu-btn {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.menu-btn-icon {
+  font-size: 40rpx;
+  color: #2d2926;
+  line-height: 1;
+  font-weight: 700;
+}
+.menu-mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+}
+.menu-pop {
+  position: absolute;
+  right: 0;
+  top: 72rpx;
+  width: 280rpx;
+  background: #fff;
+  border-radius: 20rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.14);
+  overflow: hidden;
+  z-index: 91;
+}
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 26rpx 28rpx;
+  border-bottom: 1rpx solid #f5f3f0;
+}
+.menu-row:last-child {
+  border-bottom: none;
+}
+.menu-row-icon {
+  font-size: 30rpx;
+}
+.menu-row-text {
+  font-size: 28rpx;
+  color: #2d2926;
+}
+.menu-row-text.danger {
+  color: #e53935;
 }
 
 /* Loading/Error */

@@ -250,9 +250,9 @@ Query 参数（ListTripDto）:
 
 请求体（UpdateTripDto，**全部字段可选**，字段约束同 2.1）: title / destination / startDate / endDate / theme / companions / transport / coverColor。
 
-后端行为: 若 startDate+endDate 同时传入且区间变化，**事务内重建 TripDay**（旧 day 及其下条目被删，⚠️ 已排条目会丢失——前端接入编辑功能时须提示用户）。
+后端行为（**2026-10-01 实测修正**）: 若 startDate+endDate 同时传入且区间变化，事务内**增补缺失日期的天、删除新范围外的空白天**；**含条目的天会被保留**（即使日期超出新区间），已排条目不丢失。此前"整体重建、条目丢失"的描述与实际不符。另外 `theme: ""` 可正常清空主题（返回 `theme: ""`）。
 
-成功 `200`: 返回更新后的完整详情（同 2.3 结构）。
+成功 `200`: 返回更新后的完整详情（同 2.3 结构，含 days+items，days 按日期升序）。
 错误: 400（日期非法等）/ 404。
 
 ### 2.5 删除行程 `DELETE /trips/:id`（软删除）
@@ -447,7 +447,7 @@ Query 参数（SearchDto）:
 | POST | /trips | 创建行程（自动生成 days） | 是 |
 | GET | /trips | 行程列表（sort/destination 筛选） | 是 |
 | GET | /trips/:id | 行程详情（含 days+items） | 是 |
-| PUT | /trips/:id | 更新行程（日期变更会重建 days） | 是 |
+| PUT | /trips/:id | 更新行程（日期变更增补/清理 days，含条目的天保留） | 是 |
 | DELETE | /trips/:id | 软删除行程（级联 days） | 是 |
 | POST | /trips/:tripId/days/:dayId/items | 添加条目 | 是 |
 | PATCH | /trips/:tripId/days/:dayId/items/reorder | 条目重排序 | 是 |

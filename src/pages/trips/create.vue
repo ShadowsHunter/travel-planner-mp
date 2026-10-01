@@ -27,7 +27,7 @@
       <view class="field-row">
         <view class="field field-half">
           <text class="label">出发日期 <text class="required">*</text></text>
-          <picker mode="date" :value="form.startDate" :start="today" @change="onStartChange">
+          <picker mode="date" :value="form.startDate" :start="startMin" @change="onStartChange">
             <view class="input picker-input">
               <text :class="{ placeholder: !form.startDate }">{{
                 form.startDate || '选择日期'
@@ -116,7 +116,9 @@
     <!-- 提交按钮 -->
     <view class="actions">
       <button class="btn-primary" :disabled="submitting" @tap="handleSubmit">
-        {{ submitting ? '创建中...' : '创建行程' }}
+        {{
+          submitting ? (editMode ? '保存中...' : '创建中...') : editMode ? '保存修改' : '创建行程'
+        }}
       </button>
     </view>
   </view>
@@ -124,15 +126,67 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import { useTripStore } from '../../stores/trip'
 import { todayLocal } from '../../utils/trip'
-import type { CreateTripPayload } from '../../api/trip'
+import type { CreateTripPayload, UpdateTripPayload } from '../../api/trip'
 
 const tripStore = useTripStore()
 const submitting = ref(false)
 
 // 本地时区今天（toISOString 会按 UTC 切日，东八区早 8 点前差一天）
 const today = todayLocal()
+
+// —— 编辑模式（options.id 直达）——
+const editId = ref('')
+const editMode = computed(() => !!editId.value)
+// diff 比对快照 + 原条目总数（日期变更提示用）
+const original = ref<ReturnType<typeof takeSnapshot> | null>(null)
+const originalItemCount = ref(0)
+
+// 新建限今天起；编辑可改历史行程，放开下限
+const startMin = computed(() => (editMode.value ? '2000-01-01' : today))
+
+onLoad((options) => {
+  const id = options?.id
+  if (!id) return
+  editId.value = id
+  uni.setNavigationBarTitle({ title: '编辑行程' })
+  loadForEdit(id)
+})
+
+async function loadForEdit(id: string) {
+  try {
+    const t = await tripStore.fetchTrip(id)
+    if (!t) return
+    form.title = t.title
+    form.destination = t.destination
+    form.startDate = t.startDate
+    form.endDate = t.endDate
+    form.theme = t.theme ?? ''
+    form.companions = t.companions
+    // transport 不在预设里时保留原值回显（picker 只在被点开选择时才覆盖）
+    form.transport = t.transport ?? transportOptions[0]
+    form.coverColor = t.coverColor || coverPresets[0]
+    original.value = takeSnapshot()
+    originalItemCount.value = (t.days ?? []).reduce((n, d) => n + d.items.length, 0)
+  } catch {
+    uni.showToast({ title: '行程加载失败', icon: 'none' })
+  }
+}
+
+function takeSnapshot() {
+  return {
+    title: form.title.trim(),
+    destination: form.destination.trim(),
+    startDate: form.startDate,
+    endDate: form.endDate,
+    theme: form.theme.trim(),
+    companions: form.companions,
+    transport: form.transport,
+    coverColor: form.coverColor,
+  }
+}
 
 const themeSuggestions = ['自由行', '亲子游', '蜜月', '商务', '朋友聚会', '周末短途']
 const transportOptions = ['飞机', '高铁', '自驾', '大巴', '轮船', '其他']
@@ -198,14 +252,59 @@ async function handleSubmit() {
 
   submitting.value = true
   try {
-    const trip = await tripStore.createTrip(payload)
-    // 必须用 pages.json 注册的完整路径（短路径真机失效）
-    uni.redirectTo({ url: `/pages/trips/detail/index?id=${trip.id}` })
+    if (editMode.value) {
+      await submitEdit()
+    } else {
+      const trip = await tripStore.createTrip(payload)
+      // 必须用 pages.json 注册的完整路径（短路径真机失效）
+      uni.redirectTo({ url: `/pages/trips/detail/index?id=${trip.id}` })
+    }
   } catch {
-    uni.showToast({ title: '创建失败', icon: 'none' })
+    uni.showToast({ title: editMode.value ? '保存失败' : '创建失败', icon: 'none' })
   } finally {
     submitting.value = false
   }
+}
+
+/** 编辑提交：diff 只发变更字段；日期未变绝不发送（后端收到日期会增删 days） */
+async function submitEdit() {
+  if (!editId.value || !original.value) return
+  const now = takeSnapshot()
+  const orig = original.value
+  const diff: UpdateTripPayload = {}
+  if (now.title !== orig.title) diff.title = now.title
+  if (now.destination !== orig.destination) diff.destination = now.destination
+  const dateChanged = now.startDate !== orig.startDate || now.endDate !== orig.endDate
+  if (dateChanged) {
+    diff.startDate = now.startDate
+    diff.endDate = now.endDate
+  }
+  // theme 空串可清空（后端已实测接受 theme:''）
+  if (now.theme !== orig.theme) diff.theme = now.theme
+  if (now.companions !== orig.companions) diff.companions = now.companions
+  if (now.transport !== orig.transport) diff.transport = now.transport
+  if (now.coverColor !== orig.coverColor) diff.coverColor = now.coverColor
+
+  if (Object.keys(diff).length === 0) {
+    uni.showToast({ title: '没有修改内容', icon: 'none' })
+    return
+  }
+  // 日期变更提示：实测后端保留含条目的天数、仅清掉新范围外的空白天数
+  if (dateChanged && originalItemCount.value > 0) {
+    const ok = await new Promise<boolean>((resolve) => {
+      uni.showModal({
+        title: '修改出行日期',
+        content: `新日期范围外的空白天数将被移除；含条目的天数（共 ${originalItemCount.value} 个条目）会保留。确定修改？`,
+        confirmColor: '#E53935',
+        success: (res) => resolve(!!res.confirm),
+        fail: () => resolve(false),
+      })
+    })
+    if (!ok) return
+  }
+  await tripStore.updateTrip(editId.value, diff)
+  uni.showToast({ title: '已保存', icon: 'success' })
+  setTimeout(() => uni.navigateBack(), 500)
 }
 </script>
 
