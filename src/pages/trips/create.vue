@@ -1,5 +1,15 @@
 <template>
   <view class="page">
+    <!-- 模板预填提示：× 仅解除关联（停自动推日期/批量导入），已填内容保留 -->
+    <view v-if="activeTemplate" class="template-chip">
+      <text class="template-chip-text">
+        📋 已应用模板：{{ activeTemplate.title }}（{{ activeTemplate.days }} 天）
+      </text>
+      <view class="template-chip-close" @tap="clearTemplate">
+        <text>✕</text>
+      </view>
+    </view>
+
     <view class="form-section">
       <!-- 行程标题 -->
       <view class="field">
@@ -117,7 +127,13 @@
     <view class="actions">
       <button class="btn-primary" :disabled="submitting" @tap="handleSubmit">
         {{
-          submitting ? (editMode ? '保存中...' : '创建中...') : editMode ? '保存修改' : '创建行程'
+          submitting
+            ? '创建中...'
+            : editMode
+              ? '保存修改'
+              : activeTemplate
+                ? '用模板创建'
+                : '创建行程'
         }}
       </button>
     </view>
@@ -128,10 +144,13 @@
 import { ref, reactive, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { useTripStore } from '../../stores/trip'
-import { todayLocal } from '../../utils/trip'
+import { useTemplateStore } from '../../stores/template'
+import { todayLocal, addDays } from '../../utils/trip'
 import type { CreateTripPayload, UpdateTripPayload } from '../../api/trip'
+import type { TripTemplate } from '../../config/tripTemplates'
 
 const tripStore = useTripStore()
+const templateStore = useTemplateStore()
 const submitting = ref(false)
 
 // 本地时区今天（toISOString 会按 UTC 切日，东八区早 8 点前差一天）
@@ -144,16 +163,42 @@ const editMode = computed(() => !!editId.value)
 const original = ref<ReturnType<typeof takeSnapshot> | null>(null)
 const originalItemCount = ref(0)
 
+// —— 模板模式（P5）——
+// activeTemplate 非空 = 模板预填；lastAutoEnd 记录自动推导的返回日，用户手动改过则不再覆盖
+const activeTemplate = ref<TripTemplate | null>(null)
+const lastAutoEnd = ref('')
+
 // 新建限今天起；编辑可改历史行程，放开下限
 const startMin = computed(() => (editMode.value ? '2000-01-01' : today))
 
 onLoad((options) => {
   const id = options?.id
-  if (!id) return
-  editId.value = id
-  uni.setNavigationBarTitle({ title: '编辑行程' })
-  loadForEdit(id)
+  if (id) {
+    editId.value = id
+    uni.setNavigationBarTitle({ title: '编辑行程' })
+    loadForEdit(id)
+    return
+  }
+  // 模式互斥：编辑（options.id）> 模板（store 暂存，读后即焚）> 空白新建
+  const template = templateStore.consume()
+  if (template) applyTemplate(template)
 })
+
+/** 模板预填：字段回填、日期留空（选出发日后自动推返回日） */
+function applyTemplate(t: TripTemplate) {
+  activeTemplate.value = t
+  form.title = t.title
+  form.destination = t.destination
+  form.theme = t.theme
+  form.transport = t.transport
+  form.coverColor = t.coverColor
+}
+
+/** 解除模板关联：停自动推日期 + 停批量导入，已填内容保留 */
+function clearTemplate() {
+  activeTemplate.value = null
+  lastAutoEnd.value = ''
+}
 
 async function loadForEdit(id: string) {
   try {
@@ -211,6 +256,11 @@ function onStartChange(e: any) {
   if (form.endDate && form.endDate < form.startDate) {
     form.endDate = form.startDate
   }
+  // 模板模式：返回日自动 = 出发日 + (天数-1)；用户手动改过则不覆盖
+  if (activeTemplate.value && (!form.endDate || form.endDate === lastAutoEnd.value)) {
+    form.endDate = addDays(form.startDate, activeTemplate.value.days - 1)
+    lastAutoEnd.value = form.endDate
+  }
 }
 
 function adjustCompanions(delta: number) {
@@ -256,6 +306,17 @@ async function handleSubmit() {
       await submitEdit()
     } else {
       const trip = await tripStore.createTrip(payload)
+      // 模板模式：建程后批量导入条目（部分失败不阻断跳转）
+      if (activeTemplate.value) {
+        const failed = await importTemplateItems(trip.id, activeTemplate.value)
+        if (failed > 0) {
+          uni.showToast({ title: `已创建，${failed} 个条目导入失败`, icon: 'none', duration: 1500 })
+          setTimeout(() => {
+            uni.redirectTo({ url: `/pages/trips/detail/index?id=${trip.id}` })
+          }, 1200)
+          return
+        }
+      }
       // 必须用 pages.json 注册的完整路径（短路径真机失效）
       uni.redirectTo({ url: `/pages/trips/detail/index?id=${trip.id}` })
     }
@@ -264,6 +325,32 @@ async function handleSubmit() {
   } finally {
     submitting.value = false
   }
+}
+
+/**
+ * 按天导入模板条目：addItem 依赖 store.current，先拉详情；
+ * days 按 dayNumber 排序后 zip dayItems（不信任后端数组顺序）；
+ * allSettled 容错（限流 20/min：模板条目封顶 15，建程 1 + 条目 ≤ 16 次写）。
+ * 返回失败条数。
+ */
+async function importTemplateItems(tripId: string, template: TripTemplate): Promise<number> {
+  const trip = await tripStore.fetchTrip(tripId)
+  const days = [...(trip?.days ?? [])].sort((a, b) => a.dayNumber - b.dayNumber)
+  const tasks: Promise<unknown>[] = []
+  days.forEach((day, idx) => {
+    for (const item of template.dayItems[idx] ?? []) {
+      tasks.push(
+        tripStore.addItem(day.id, {
+          type: item.type,
+          name: item.name,
+          time: item.time,
+          notes: item.notes,
+        }),
+      )
+    }
+  })
+  const results = await Promise.allSettled(tasks)
+  return results.filter((r) => r.status === 'rejected').length
 }
 
 /** 编辑提交：diff 只发变更字段；日期未变绝不发送（后端收到日期会增删 days） */
@@ -314,6 +401,33 @@ async function submitEdit() {
   background: #fbf9f7;
   padding: 24rpx;
   padding-bottom: 180rpx;
+}
+
+/* 模板预填提示条 */
+.template-chip {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  background: #fff0eb;
+  border: 1rpx solid #f27649;
+  border-radius: 16rpx;
+  padding: 16rpx 24rpx;
+  margin-bottom: 24rpx;
+}
+.template-chip-text {
+  flex: 1;
+  font-size: 24rpx;
+  color: #f27649;
+}
+.template-chip-close {
+  width: 40rpx;
+  height: 40rpx;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f27649;
+  font-size: 24rpx;
 }
 .form-section {
   background: #fff;

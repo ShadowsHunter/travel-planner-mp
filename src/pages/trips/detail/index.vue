@@ -26,6 +26,11 @@
             <text class="menu-row-icon">✏️</text>
             <text class="menu-row-text">编辑行程</text>
           </view>
+          <!-- 分享必须用 button open-type（showActionSheet 无法拉起转发） -->
+          <button class="menu-row menu-share-btn" open-type="share">
+            <text class="menu-row-icon">📤</text>
+            <text class="menu-row-text">分享给好友</text>
+          </button>
           <view class="menu-row" @tap="confirmDeleteTrip">
             <text class="menu-row-icon">🗑️</text>
             <text class="menu-row-text danger">删除行程</text>
@@ -342,7 +347,7 @@
 
 <script setup lang="ts">
 import { ref, computed, reactive, watch } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage } from '@dcloudio/uni-app'
 import { useTripStore } from '../../../stores/trip'
 import { formatDateRange, formatShortDate } from '../../../utils/trip'
 import { ITEM_TYPES, ITEM_TYPE_META } from '../../../utils/itemType'
@@ -535,6 +540,17 @@ onLoad((options) => {
     error.value = '行程不存在'
     loading.value = false
   }
+})
+
+// 分享：转发卡片落到本页详情；接收方非属主时后端 404，由已有 error 分支兜底
+onShareAppMessage(() => {
+  if (trip.value) {
+    return {
+      title: `「${trip.value.title}」行程邀你同游`,
+      path: `/pages/trips/detail/index?id=${tripId.value}`,
+    }
+  }
+  return { title: '旅行规划', path: '/pages/trips/index' }
 })
 
 async function loadTrip(id: string) {
@@ -845,6 +861,23 @@ function resetAddForm() {
 }
 .menu-row-text.danger {
   color: #e53935;
+}
+
+/* 分享行：button 伪装成普通菜单行（清除小程序 button 默认外观） */
+.menu-share-btn {
+  width: 100%;
+  margin: 0;
+  padding: 26rpx 28rpx;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  line-height: inherit;
+  font-size: inherit;
+  box-sizing: border-box;
+}
+.menu-share-btn::after {
+  border: none;
 }
 
 /* Loading/Error */
