@@ -15,8 +15,12 @@ const phoneValid = computed(() => /^1\d{10}$/.test(phone.value))
 
 function triggerShake() {
   shake.value = false
-  setTimeout(() => { shake.value = true }, 16)
-  setTimeout(() => { shake.value = false }, 500)
+  setTimeout(() => {
+    shake.value = true
+  }, 16)
+  setTimeout(() => {
+    shake.value = false
+  }, 500)
 }
 
 async function handleLogin() {
@@ -78,8 +82,8 @@ function goRegister() {
           <text class="prefix-text">+86</text>
         </view>
         <input
-          class="phone-input"
           v-model="phone"
+          class="phone-input"
           type="number"
           maxlength="11"
           placeholder="请输入手机号"
@@ -90,8 +94,8 @@ function goRegister() {
       <view class="input-group">
         <text class="input-icon">🔒</text>
         <input
-          class="input-field has-icon"
           v-model="password"
+          class="input-field has-icon"
           type="password"
           password
           placeholder="请输入密码"
@@ -102,11 +106,7 @@ function goRegister() {
       <text v-if="errorMsg" class="error-text">{{ errorMsg }}</text>
 
       <!-- 登录按钮 -->
-      <view
-        class="login-btn"
-        :class="{ 'btn-disabled': loading }"
-        @tap="handleLogin"
-      >
+      <view class="login-btn" :class="{ 'btn-disabled': loading }" @tap="handleLogin">
         <text class="login-btn-text">{{ loading ? '登录中…' : '登 录' }}</text>
       </view>
 
@@ -120,13 +120,11 @@ function goRegister() {
       <view class="agreement" :class="{ 'shake-anim': shake }">
         <checkbox
           :checked="agreed"
-          @tap="agreed = !agreed"
           color="#FF385C"
           style="transform: scale(0.7)"
+          @tap="agreed = !agreed"
         />
-        <text class="agreement-text">
-          我已阅读并同意《用户协议》和《隐私政策》
-        </text>
+        <text class="agreement-text"> 我已阅读并同意《用户协议》和《隐私政策》 </text>
       </view>
     </view>
   </view>
@@ -137,12 +135,12 @@ function goRegister() {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #FFFFFF;
+  background: #ffffff;
 }
 
 /* 品牌区 */
 .brand {
-  background: #1A1A1A;
+  background: #1a1a1a;
   padding-top: 160rpx;
   padding-bottom: 80rpx;
   display: flex;
@@ -159,7 +157,7 @@ function goRegister() {
 .logo {
   width: 88rpx;
   height: 88rpx;
-  background: #FF385C;
+  background: #ff385c;
   border-radius: 20rpx;
   display: flex;
   align-items: center;
@@ -172,7 +170,7 @@ function goRegister() {
 .brand-name {
   font-size: 48rpx;
   font-weight: 700;
-  color: #FFFFFF;
+  color: #ffffff;
   letter-spacing: 2rpx;
 }
 .brand-slogan {
@@ -199,7 +197,7 @@ function goRegister() {
 }
 .form-subtitle {
   font-size: 26rpx;
-  color: #6A6A6A;
+  color: #6a6a6a;
   margin-top: 8rpx;
   display: block;
 }
@@ -209,17 +207,17 @@ function goRegister() {
   display: flex;
   align-items: center;
   height: 88rpx;
-  border: 1.5rpx solid #DDDDDD;
+  border: 1.5rpx solid #dddddd;
   border-radius: 16rpx;
   overflow: hidden;
 }
 .phone-prefix {
-  background: #F7F7F7;
+  background: #f7f7f7;
   height: 100%;
   display: flex;
   align-items: center;
   padding: 0 24rpx;
-  border-right: 1rpx solid #DDDDDD;
+  border-right: 1rpx solid #dddddd;
 }
 .prefix-text {
   font-size: 28rpx;
@@ -240,9 +238,9 @@ function goRegister() {
   display: flex;
   align-items: center;
   height: 88rpx;
-  border: 1.5rpx solid #DDDDDD;
+  border: 1.5rpx solid #dddddd;
   border-radius: 16rpx;
-  background: #FFFFFF;
+  background: #ffffff;
 }
 .input-icon {
   position: absolute;
@@ -264,13 +262,13 @@ function goRegister() {
 /* 错误文字 */
 .error-text {
   font-size: 26rpx;
-  color: #E53935;
+  color: #e53935;
   margin-top: -8rpx;
 }
 
 /* 登录按钮 */
 .login-btn {
-  background: #FF385C;
+  background: #ff385c;
   border-radius: 16rpx;
   height: 88rpx;
   display: flex;
@@ -279,13 +277,13 @@ function goRegister() {
   margin-top: 8rpx;
 }
 .login-btn:active {
-  background: #E00B41;
+  background: #e00b41;
 }
 .btn-disabled {
   opacity: 0.6;
 }
 .login-btn-text {
-  color: #FFFFFF;
+  color: #ffffff;
   font-size: 32rpx;
   font-weight: 600;
 }
@@ -299,11 +297,11 @@ function goRegister() {
 }
 .link-normal {
   font-size: 26rpx;
-  color: #6A6A6A;
+  color: #6a6a6a;
 }
 .link-highlight {
   font-size: 26rpx;
-  color: #FF385C;
+  color: #ff385c;
   font-weight: 500;
 }
 
@@ -321,16 +319,27 @@ function goRegister() {
 
 /* 抖动动画 */
 @keyframes shake-x {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-6px); }
-  40% { transform: translateX(6px); }
-  60% { transform: translateX(-4px); }
-  80% { transform: translateX(4px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
 }
 .shake-anim {
   animation: shake-x 0.4s ease;
 }
 .shake-anim .agreement-text {
-  color: #E53935;
+  color: #e53935;
 }
 </style>

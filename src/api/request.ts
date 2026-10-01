@@ -1,8 +1,7 @@
 /**
- * ponytail: uni.request 封装，替代 axios。
+ * uni.request 封装，替代 axios。
  * 自动携带 token，401 清除登录态并跳登录页。
  */
-
 
 const TOKEN_KEY = 'travel_token'
 const USER_KEY = 'travel_user'
@@ -33,7 +32,8 @@ function request<T = any>(opts: RequestOptions): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     uni.request({
       url: buildUrl(`${BASE_URL}${opts.url}`, opts.params),
-      method: opts.method ?? 'GET',
+      // wx.request 实际支持 PATCH，但 @dcloudio/types 的 method 类型未收录，此处收窄绕过
+      method: (opts.method ?? 'GET') as 'GET' | 'POST' | 'PUT' | 'DELETE',
       data: opts.data as AnyObject,
       header,
       success: (res) => {
@@ -42,7 +42,7 @@ function request<T = any>(opts: RequestOptions): Promise<T> {
         if (status === 401) {
           uni.removeStorageSync(TOKEN_KEY)
           uni.removeStorageSync(USER_KEY)
-          // ponytail: 用 reLaunch 跳登录页，避免页面栈累积
+          // 用 reLaunch 跳登录页，避免页面栈累积
           uni.reLaunch({ url: '/pages/login/index' })
           reject(new Error('未登录'))
           return

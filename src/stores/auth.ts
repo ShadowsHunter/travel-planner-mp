@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { getMe, login as apiLogin, register as apiRegister, type User } from '../api/auth'
 import { TOKEN_KEY, USER_KEY } from '../api/request'
 
-/** ponytail: uni storage 替代 localStorage，同步 API 用法几乎一致 */
+/** uni storage 替代 localStorage，同步 API 用法几乎一致 */
 function loadUser(): User | null {
   try {
     const raw = uni.getStorageSync(USER_KEY) as string

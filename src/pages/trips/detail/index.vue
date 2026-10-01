@@ -43,18 +43,10 @@
 
       <!-- Segmented Control: 列表 / 地图 -->
       <view class="segmented">
-        <view
-          class="seg-item"
-          :class="{ active: viewMode === 'list' }"
-          @tap="viewMode = 'list'"
-        >
+        <view class="seg-item" :class="{ active: viewMode === 'list' }" @tap="viewMode = 'list'">
           <text>列表</text>
         </view>
-        <view
-          class="seg-item"
-          :class="{ active: viewMode === 'map' }"
-          @tap="viewMode = 'map'"
-        >
+        <view class="seg-item" :class="{ active: viewMode === 'map' }" @tap="viewMode = 'map'">
           <text>地图</text>
         </view>
       </view>
@@ -82,14 +74,11 @@
             v-for="(item, idx) in activeItems"
             :key="item.id"
             class="item-card"
-            :class="{ 'highlight': highlightedItemId === item.id }"
+            :class="{ highlight: highlightedItemId === item.id }"
             @tap="onItemTap(item)"
           >
             <view class="item-left">
-              <view
-                class="type-dot"
-                :style="{ background: typeColor(item.type) }"
-              />
+              <view class="type-dot" :style="{ background: typeColor(item.type) }" />
               <view class="item-info">
                 <text class="item-name">{{ item.name }}</text>
                 <view v-if="item.address || item.time" class="item-meta">
@@ -102,11 +91,7 @@
 
             <!-- 排序按钮 -->
             <view v-if="sortMode" class="sort-btns">
-              <view
-                class="sort-btn"
-                :class="{ disabled: idx === 0 }"
-                @tap.stop="moveItem(idx, -1)"
-              >
+              <view class="sort-btn" :class="{ disabled: idx === 0 }" @tap.stop="moveItem(idx, -1)">
                 <text>↑</text>
               </view>
               <view
@@ -164,8 +149,8 @@
         <!-- 搜索 POI -->
         <view class="search-bar">
           <input
-            class="search-input"
             v-model="searchQuery"
+            class="search-input"
             placeholder="搜索地点..."
             @confirm="doSearch"
           />
@@ -198,7 +183,10 @@
                 :key="t"
                 class="type-option"
                 :class="{ active: addForm.type === t }"
-                :style="{ borderColor: addForm.type === t ? typeColor(t) : '#E8E4E0', background: addForm.type === t ? typeColor(t) + '10' : 'transparent' }"
+                :style="{
+                  borderColor: addForm.type === t ? typeColor(t) : '#E8E4E0',
+                  background: addForm.type === t ? typeColor(t) + '10' : 'transparent',
+                }"
                 @tap="addForm.type = t"
               >
                 <view class="type-dot-sm" :style="{ background: typeColor(t) }" />
@@ -209,12 +197,12 @@
 
           <view class="form-row">
             <text class="form-label">名称</text>
-            <input class="form-input" v-model="addForm.name" placeholder="地点名称" />
+            <input v-model="addForm.name" class="form-input" placeholder="地点名称" />
           </view>
 
           <view class="form-row">
             <text class="form-label">地址</text>
-            <input class="form-input" v-model="addForm.address" placeholder="详细地址" />
+            <input v-model="addForm.address" class="form-input" placeholder="详细地址" />
           </view>
 
           <view class="form-row">
@@ -228,7 +216,7 @@
 
           <view class="form-row">
             <text class="form-label">备注</text>
-            <textarea class="form-textarea" v-model="addForm.notes" placeholder="补充说明..." />
+            <textarea v-model="addForm.notes" class="form-textarea" placeholder="补充说明..." />
           </view>
 
           <view class="form-actions">
@@ -262,7 +250,10 @@
                 :key="t"
                 class="type-option"
                 :class="{ active: editForm.type === t }"
-                :style="{ borderColor: editForm.type === t ? typeColor(t) : '#E8E4E0', background: editForm.type === t ? typeColor(t) + '10' : 'transparent' }"
+                :style="{
+                  borderColor: editForm.type === t ? typeColor(t) : '#E8E4E0',
+                  background: editForm.type === t ? typeColor(t) + '10' : 'transparent',
+                }"
                 @tap="editForm.type = t"
               >
                 <view class="type-dot-sm" :style="{ background: typeColor(t) }" />
@@ -273,17 +264,21 @@
 
           <view class="form-row">
             <text class="form-label">名称</text>
-            <input class="form-input" v-model="editForm.name" placeholder="地点名称" />
+            <input v-model="editForm.name" class="form-input" placeholder="地点名称" />
           </view>
 
           <view class="form-row">
             <text class="form-label">地址</text>
-            <input class="form-input" v-model="editForm.address" placeholder="详细地址" />
+            <input v-model="editForm.address" class="form-input" placeholder="详细地址" />
           </view>
 
           <view class="form-row">
             <text class="form-label">时间</text>
-            <picker mode="time" :value="editForm.time" @change="editForm.time = $event.detail.value">
+            <picker
+              mode="time"
+              :value="editForm.time"
+              @change="editForm.time = $event.detail.value"
+            >
               <view class="form-input picker-input">
                 <text>{{ editForm.time || '选择时间' }}</text>
               </view>
@@ -292,7 +287,7 @@
 
           <view class="form-row">
             <text class="form-label">备注</text>
-            <textarea class="form-textarea" v-model="editForm.notes" placeholder="补充说明..." />
+            <textarea v-model="editForm.notes" class="form-textarea" placeholder="补充说明..." />
           </view>
 
           <view class="form-actions">
@@ -310,7 +305,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { useTripStore } from '../../../stores/trip'
 import { formatDateRange } from '../../../utils/trip'
@@ -338,11 +333,11 @@ const editingItemId = ref('')
 const trip = computed(() => tripStore.current)
 const days = computed<TripDay[]>(() => trip.value?.days ?? [])
 const activeDay = computed<TripDay | null>(
-  () => days.value.find((d) => d.id === activeDayId.value) ?? days.value[0] ?? null
+  () => days.value.find((d) => d.id === activeDayId.value) ?? days.value[0] ?? null,
 )
 const activeItems = computed(() => activeDay.value?.items ?? [])
 const dateRange = computed(() =>
-  trip.value ? formatDateRange(trip.value.startDate, trip.value.endDate) : ''
+  trip.value ? formatDateRange(trip.value.startDate, trip.value.endDate) : '',
 )
 
 // 地图中心点（取第一个有坐标的条目，或默认北京）
@@ -378,12 +373,14 @@ const routeLine = computed(() => {
     .filter((i) => i.lat && i.lng)
     .map((i) => ({ latitude: Number(i.lat), longitude: Number(i.lng) }))
   if (points.length < 2) return []
-  return [{
-    points,
-    color: '#F27649',
-    width: 3,
-    dottedLine: true,
-  }]
+  return [
+    {
+      points,
+      color: '#F27649',
+      width: 3,
+      dottedLine: true,
+    },
+  ]
 })
 
 // 添加表单
@@ -577,7 +574,7 @@ function resetAddForm() {
 <style scoped>
 .page {
   min-height: 100vh;
-  background: #FBF9F7;
+  background: #fbf9f7;
   display: flex;
   flex-direction: column;
 }
@@ -588,7 +585,7 @@ function resetAddForm() {
   align-items: center;
   padding: 20rpx 24rpx;
   background: #fff;
-  border-bottom: 1rpx solid #E8E4E0;
+  border-bottom: 1rpx solid #e8e4e0;
 }
 .back-btn {
   width: 64rpx;
@@ -599,7 +596,7 @@ function resetAddForm() {
 }
 .back-icon {
   font-size: 36rpx;
-  color: #2D2926;
+  color: #2d2926;
 }
 .header-info {
   flex: 1;
@@ -608,7 +605,7 @@ function resetAddForm() {
 .header-title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #2D2926;
+  color: #2d2926;
 }
 .header-meta {
   display: flex;
@@ -617,11 +614,12 @@ function resetAddForm() {
 }
 .meta-item {
   font-size: 22rpx;
-  color: #6B6560;
+  color: #6b6560;
 }
 
 /* Loading/Error */
-.loading, .error {
+.loading,
+.error {
   flex: 1;
   display: flex;
   align-items: center;
@@ -629,11 +627,11 @@ function resetAddForm() {
 }
 .loading-text {
   font-size: 28rpx;
-  color: #9B9590;
+  color: #9b9590;
 }
 .error-text {
   font-size: 28rpx;
-  color: #E53935;
+  color: #e53935;
 }
 
 /* Main */
@@ -648,7 +646,7 @@ function resetAddForm() {
 .day-tabs {
   white-space: nowrap;
   background: #fff;
-  border-bottom: 1rpx solid #E8E4E0;
+  border-bottom: 1rpx solid #e8e4e0;
   padding: 16rpx 24rpx;
 }
 .day-tab {
@@ -658,33 +656,33 @@ function resetAddForm() {
   padding: 16rpx 28rpx;
   margin-right: 16rpx;
   border-radius: 16rpx;
-  background: #F5F3F0;
+  background: #f5f3f0;
 }
 .day-tab.active {
-  background: #F27649;
+  background: #f27649;
 }
 .day-label {
   font-size: 26rpx;
   font-weight: 600;
-  color: #2D2926;
+  color: #2d2926;
 }
 .day-tab.active .day-label {
   color: #fff;
 }
 .day-date {
   font-size: 20rpx;
-  color: #6B6560;
+  color: #6b6560;
   margin-top: 4rpx;
 }
 .day-tab.active .day-date {
-  color: rgba(255,255,255,0.8);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 /* Segmented Control */
 .segmented {
   display: flex;
   margin: 16rpx 24rpx;
-  background: #F5F3F0;
+  background: #f5f3f0;
   border-radius: 12rpx;
   padding: 4rpx;
 }
@@ -694,13 +692,13 @@ function resetAddForm() {
   padding: 14rpx 0;
   border-radius: 10rpx;
   font-size: 26rpx;
-  color: #6B6560;
+  color: #6b6560;
 }
 .seg-item.active {
   background: #fff;
-  color: #2D2926;
+  color: #2d2926;
   font-weight: 600;
-  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.06);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
 }
 
 /* List Area */
@@ -718,16 +716,16 @@ function resetAddForm() {
 }
 .item-count {
   font-size: 24rpx;
-  color: #9B9590;
+  color: #9b9590;
 }
 .sort-toggle {
   padding: 8rpx 20rpx;
-  background: #F5F3F0;
+  background: #f5f3f0;
   border-radius: 8rpx;
 }
 .sort-text {
   font-size: 24rpx;
-  color: #F27649;
+  color: #f27649;
   font-weight: 600;
 }
 
@@ -746,11 +744,11 @@ function resetAddForm() {
 }
 .empty-text {
   font-size: 28rpx;
-  color: #6B6560;
+  color: #6b6560;
 }
 .empty-hint {
   font-size: 24rpx;
-  color: #9B9590;
+  color: #9b9590;
   margin-top: 8rpx;
 }
 
@@ -766,10 +764,10 @@ function resetAddForm() {
   border-radius: 16rpx;
   padding: 20rpx;
   margin-bottom: 12rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
 }
 .item-card.highlight {
-  border: 2rpx solid #F27649;
+  border: 2rpx solid #f27649;
 }
 .item-left {
   flex: 1;
@@ -789,7 +787,7 @@ function resetAddForm() {
 .item-name {
   font-size: 28rpx;
   font-weight: 600;
-  color: #2D2926;
+  color: #2d2926;
 }
 .item-meta {
   display: flex;
@@ -798,15 +796,15 @@ function resetAddForm() {
 }
 .item-time {
   font-size: 22rpx;
-  color: #F27649;
+  color: #f27649;
 }
 .item-addr {
   font-size: 22rpx;
-  color: #9B9590;
+  color: #9b9590;
 }
 .item-notes {
   font-size: 22rpx;
-  color: #6B6560;
+  color: #6b6560;
   margin-top: 6rpx;
 }
 
@@ -823,7 +821,7 @@ function resetAddForm() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #F5F3F0;
+  background: #f5f3f0;
   border-radius: 8rpx;
 }
 .sort-btn.disabled {
@@ -842,12 +840,12 @@ function resetAddForm() {
   font-size: 22rpx;
 }
 .action-btn.edit {
-  background: #FFF0EB;
-  color: #F27649;
+  background: #fff0eb;
+  color: #f27649;
 }
 .action-btn.delete {
-  background: #FFF1F2;
-  color: #E53935;
+  background: #fff1f2;
+  color: #e53935;
 }
 
 /* FAB */
@@ -858,7 +856,7 @@ function resetAddForm() {
   gap: 8rpx;
   margin: 20rpx 24rpx;
   padding: 24rpx;
-  background: #F27649;
+  background: #f27649;
   border-radius: 16rpx;
 }
 .add-fab-icon {
@@ -884,7 +882,7 @@ function resetAddForm() {
 .sheet-mask {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   z-index: 999;
   display: flex;
   align-items: flex-end;
@@ -906,7 +904,7 @@ function resetAddForm() {
 .sheet-title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #2D2926;
+  color: #2d2926;
 }
 .sheet-close {
   width: 48rpx;
@@ -914,7 +912,7 @@ function resetAddForm() {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9B9590;
+  color: #9b9590;
   font-size: 28rpx;
 }
 
@@ -926,14 +924,14 @@ function resetAddForm() {
 }
 .search-input {
   flex: 1;
-  border: 1rpx solid #E8E4E0;
+  border: 1rpx solid #e8e4e0;
   border-radius: 12rpx;
   padding: 16rpx 20rpx;
   font-size: 26rpx;
 }
 .search-btn {
   padding: 16rpx 24rpx;
-  background: #F27649;
+  background: #f27649;
   border-radius: 12rpx;
   color: #fff;
   font-size: 26rpx;
@@ -944,19 +942,19 @@ function resetAddForm() {
 }
 .poi-item {
   padding: 16rpx;
-  border-bottom: 1rpx solid #F5F3F0;
+  border-bottom: 1rpx solid #f5f3f0;
 }
 .poi-item.selected {
-  background: #FFF0EB;
+  background: #fff0eb;
 }
 .poi-name {
   font-size: 26rpx;
-  color: #2D2926;
+  color: #2d2926;
   font-weight: 500;
 }
 .poi-addr {
   font-size: 22rpx;
-  color: #9B9590;
+  color: #9b9590;
   margin-top: 4rpx;
 }
 
@@ -969,17 +967,17 @@ function resetAddForm() {
 }
 .form-label {
   font-size: 24rpx;
-  color: #6B6560;
+  color: #6b6560;
   margin-bottom: 8rpx;
 }
 .form-input {
-  border: 1rpx solid #E8E4E0;
+  border: 1rpx solid #e8e4e0;
   border-radius: 12rpx;
   padding: 16rpx 20rpx;
   font-size: 26rpx;
 }
 .form-textarea {
-  border: 1rpx solid #E8E4E0;
+  border: 1rpx solid #e8e4e0;
   border-radius: 12rpx;
   padding: 16rpx 20rpx;
   font-size: 26rpx;
@@ -988,7 +986,7 @@ function resetAddForm() {
 .picker-input {
   display: flex;
   align-items: center;
-  color: #9B9590;
+  color: #9b9590;
 }
 
 /* Type Selector */
@@ -1002,7 +1000,7 @@ function resetAddForm() {
   align-items: center;
   gap: 8rpx;
   padding: 12rpx 16rpx;
-  border: 1rpx solid #E8E4E0;
+  border: 1rpx solid #e8e4e0;
   border-radius: 10rpx;
   font-size: 24rpx;
 }
@@ -1028,11 +1026,11 @@ function resetAddForm() {
   font-size: 28rpx;
 }
 .btn-cancel {
-  background: #F5F3F0;
-  color: #6B6560;
+  background: #f5f3f0;
+  color: #6b6560;
 }
 .btn-primary {
-  background: #F27649;
+  background: #f27649;
   color: #fff;
 }
 </style>

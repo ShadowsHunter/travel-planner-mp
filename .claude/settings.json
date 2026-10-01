@@ -1,0 +1,23 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(node -e \"const d=JSON.parse(require('fs').readFileSync(0,'utf8'));process.stdout.write(d.tool_input?.file_path||d.tool_response?.filePath||'')\"); case \"$f\" in *.vue|*.ts|*.js|*.mjs) out=$( { NO_COLOR=1 node_modules/.bin/prettier --write \"$f\" && NO_COLOR=1 node_modules/.bin/eslint --fix \"$f\"; } 2>&1 >/dev/null );; *.json|*.css) out=$( { NO_COLOR=1 node_modules/.bin/prettier --write \"$f\"; } 2>&1 >/dev/null );; esac; if [ -n \"$out\" ]; then node -e \"process.stdout.write(JSON.stringify({decision:'block',reason:'format/lint 失败:\\n'+process.argv[1]}))\" \"$out\"; fi",
+            "timeout": 60,
+            "statusMessage": "format + lint edited file"
+          },
+          {
+            "type": "command",
+            "command": "f=$(node -e \"const d=JSON.parse(require('fs').readFileSync(0,'utf8'));process.stdout.write(d.tool_input?.file_path||d.tool_response?.filePath||'')\"); case \"$f\" in *.ts|*.vue) out=$(node_modules/.bin/tsc --noEmit 2>/dev/null);; esac; if [ -n \"$out\" ]; then node -e \"process.stdout.write(JSON.stringify({decision:'block',reason:'typecheck 失败 (tsc --noEmit):\\n'+process.argv[1]}))\" \"$out\"; fi",
+            "timeout": 120,
+            "statusMessage": "typecheck project"
+          }
+        ]
+      }
+    ]
+  }
+}

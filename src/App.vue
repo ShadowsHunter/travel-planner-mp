@@ -28,12 +28,14 @@ onLaunch(async () => {
 <style>
 /* DESIGN.md 全局变量 */
 page {
-  --color-primary: #FF385C;
+  --color-primary: #ff385c;
   --color-ink: #222222;
-  --color-canvas: #FFFFFF;
-  background: #FFFFFF;
+  --color-canvas: #ffffff;
+  background: #ffffff;
   color: #222222;
-  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei',
+    sans-serif;
   font-size: 28rpx;
   line-height: 1.5;
 }

@@ -5,8 +5,8 @@
       <view class="field">
         <text class="label">行程标题 <text class="required">*</text></text>
         <input
-          class="input"
           v-model="form.title"
+          class="input"
           placeholder="例如：东京 5 日自由行"
           maxlength="50"
         />
@@ -16,8 +16,8 @@
       <view class="field">
         <text class="label">目的地 <text class="required">*</text></text>
         <input
-          class="input"
           v-model="form.destination"
+          class="input"
           placeholder="输入城市或地区名称"
           maxlength="30"
         />
@@ -29,13 +29,20 @@
           <text class="label">出发日期 <text class="required">*</text></text>
           <picker mode="date" :value="form.startDate" :start="today" @change="onStartChange">
             <view class="input picker-input">
-              <text :class="{ placeholder: !form.startDate }">{{ form.startDate || '选择日期' }}</text>
+              <text :class="{ placeholder: !form.startDate }">{{
+                form.startDate || '选择日期'
+              }}</text>
             </view>
           </picker>
         </view>
         <view class="field field-half">
           <text class="label">返回日期 <text class="required">*</text></text>
-          <picker mode="date" :value="form.endDate" :start="form.startDate || today" @change="form.endDate = $event.detail.value">
+          <picker
+            mode="date"
+            :value="form.endDate"
+            :start="form.startDate || today"
+            @change="form.endDate = $event.detail.value"
+          >
             <view class="input picker-input">
               <text :class="{ placeholder: !form.endDate }">{{ form.endDate || '选择日期' }}</text>
             </view>
@@ -47,8 +54,8 @@
       <view class="field">
         <text class="label">出行主题</text>
         <input
-          class="input"
           v-model="form.theme"
+          class="input"
           placeholder="例如：自由行、亲子游"
           maxlength="20"
         />
@@ -142,12 +149,6 @@ const form = reactive({
 
 const transportIndex = computed(() => transportOptions.indexOf(form.transport))
 
-function addDays(dateStr: string, n: number): string {
-  const d = new Date(dateStr)
-  d.setDate(d.getDate() + n)
-  return d.toISOString().slice(0, 10)
-}
-
 function onStartChange(e: any) {
   form.startDate = e.detail.value
   // 结束日期联动：若早于开始则抬到开始日
@@ -208,7 +209,7 @@ async function handleSubmit() {
 <style scoped>
 .page {
   min-height: 100vh;
-  background: #FBF9F7;
+  background: #fbf9f7;
   padding: 24rpx;
   padding-bottom: 180rpx;
 }
@@ -216,7 +217,7 @@ async function handleSubmit() {
   background: #fff;
   border-radius: 24rpx;
   padding: 32rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
 }
 .field {
   margin-bottom: 32rpx;
@@ -234,21 +235,21 @@ async function handleSubmit() {
 .label {
   font-size: 26rpx;
   font-weight: 600;
-  color: #6B6560;
+  color: #6b6560;
   margin-bottom: 12rpx;
   display: block;
   text-transform: uppercase;
   letter-spacing: 1rpx;
 }
 .required {
-  color: #E53935;
+  color: #e53935;
 }
 .input {
-  border: 1.5rpx solid #E8E4E0;
+  border: 1.5rpx solid #e8e4e0;
   border-radius: 16rpx;
   padding: 20rpx 24rpx;
   font-size: 28rpx;
-  color: #2D2926;
+  color: #2d2926;
   background: #fff;
 }
 .picker-input {
@@ -256,7 +257,7 @@ async function handleSubmit() {
   align-items: center;
 }
 .placeholder {
-  color: #9B9590;
+  color: #9b9590;
 }
 .theme-tags {
   display: flex;
@@ -267,13 +268,13 @@ async function handleSubmit() {
 .theme-tag {
   padding: 12rpx 24rpx;
   border-radius: 32rpx;
-  background: #F5F3F0;
+  background: #f5f3f0;
   font-size: 24rpx;
-  color: #6B6560;
+  color: #6b6560;
 }
 .theme-tag.active {
-  background: #FFF0EB;
-  color: #F27649;
+  background: #fff0eb;
+  color: #f27649;
 }
 .stepper {
   display: flex;
@@ -284,25 +285,25 @@ async function handleSubmit() {
   width: 64rpx;
   height: 64rpx;
   border-radius: 16rpx;
-  border: 1.5rpx solid #E8E4E0;
+  border: 1.5rpx solid #e8e4e0;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .stepper-icon {
   font-size: 36rpx;
-  color: #2D2926;
+  color: #2d2926;
 }
 .stepper-value {
   font-size: 36rpx;
   font-weight: 600;
-  color: #2D2926;
+  color: #2d2926;
   min-width: 48rpx;
   text-align: center;
 }
 .stepper-unit {
   font-size: 26rpx;
-  color: #6B6560;
+  color: #6b6560;
 }
 .color-picker {
   display: flex;
@@ -315,7 +316,7 @@ async function handleSubmit() {
   border: 4rpx solid transparent;
 }
 .color-dot.selected {
-  border-color: #2D2926;
+  border-color: #2d2926;
   transform: scale(1.1);
 }
 .actions {
@@ -326,13 +327,13 @@ async function handleSubmit() {
   padding: 24rpx 32rpx;
   padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
   background: #fff;
-  box-shadow: 0 -2rpx 12rpx rgba(0,0,0,0.06);
+  box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.06);
 }
 .btn-primary {
   width: 100%;
   height: 88rpx;
   border-radius: 16rpx;
-  background: #F27649;
+  background: #f27649;
   color: #fff;
   font-size: 32rpx;
   font-weight: 600;

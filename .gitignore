@@ -2,3 +2,7 @@ node_modules/
 dist/
 *.log
 .DS_Store
+
+# 本地工具索引/规则（codegraph MCP、Cursor），不入库
+.codegraph/
+.cursor/

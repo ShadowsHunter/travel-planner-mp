@@ -36,7 +36,10 @@ export function createItem(
   dayId: string,
   data: CreateItemPayload,
 ): Promise<TripItem> {
-  return request.post(`/trips/${tripId}/days/${dayId}/items`, data as unknown as Record<string, unknown>)
+  return request.post(
+    `/trips/${tripId}/days/${dayId}/items`,
+    data as unknown as Record<string, unknown>,
+  )
 }
 
 export function updateItem(id: string, data: UpdateItemPayload): Promise<TripItem> {
@@ -47,10 +50,6 @@ export function deleteItem(id: string): Promise<{ success: boolean }> {
   return request.delete(`/items/${id}`)
 }
 
-export function reorderItems(
-  tripId: string,
-  dayId: string,
-  orderedIds: string[],
-): Promise<void> {
+export function reorderItems(tripId: string, dayId: string, orderedIds: string[]): Promise<void> {
   return request.patch(`/trips/${tripId}/days/${dayId}/items/reorder`, { orderedIds })
 }

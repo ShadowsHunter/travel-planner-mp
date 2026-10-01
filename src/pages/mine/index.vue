@@ -107,12 +107,12 @@ const maskedPhone = computed(() => {
 
 const upcomingCount = computed(() => {
   const now = new Date()
-  return tripStore.trips.filter(t => new Date(t.startDate) > now).length
+  return tripStore.trips.filter((t) => new Date(t.startDate) > now).length
 })
 
 const completedCount = computed(() => {
   const now = new Date()
-  return tripStore.trips.filter(t => new Date(t.endDate) < now).length
+  return tripStore.trips.filter((t) => new Date(t.endDate) < now).length
 })
 
 onShow(() => {
@@ -161,12 +161,12 @@ function handleLogout() {
 <style scoped>
 .page {
   min-height: 100vh;
-  background: #FBF9F7;
+  background: #fbf9f7;
 }
 
 /* 用户信息区域 */
 .user-section {
-  background: linear-gradient(135deg, #F27649 0%, #E0613A 100%);
+  background: linear-gradient(135deg, #f27649 0%, #e0613a 100%);
   padding: 48rpx 32rpx 40rpx;
   border-radius: 0 0 40rpx 40rpx;
 }
@@ -179,7 +179,7 @@ function handleLogout() {
   width: 112rpx;
   height: 112rpx;
   border-radius: 50%;
-  background: rgba(255,255,255,0.25);
+  background: rgba(255, 255, 255, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -202,12 +202,12 @@ function handleLogout() {
 }
 .phone {
   font-size: 26rpx;
-  color: rgba(255,255,255,0.8);
+  color: rgba(255, 255, 255, 0.8);
 }
 .stats-row {
   display: flex;
   justify-content: space-around;
-  background: rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 20rpx;
   padding: 24rpx 0;
 }
@@ -223,7 +223,7 @@ function handleLogout() {
 }
 .stat-label {
   font-size: 22rpx;
-  color: rgba(255,255,255,0.8);
+  color: rgba(255, 255, 255, 0.8);
   margin-top: 4rpx;
 }
 
@@ -236,13 +236,13 @@ function handleLogout() {
   background: #fff;
   margin: 24rpx;
   border-radius: 24rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
 }
 .login-avatar-placeholder {
   width: 120rpx;
   height: 120rpx;
   border-radius: 50%;
-  background: #F5F3F0;
+  background: #f5f3f0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -253,11 +253,11 @@ function handleLogout() {
 }
 .login-hint {
   font-size: 28rpx;
-  color: #6B6560;
+  color: #6b6560;
   margin-bottom: 32rpx;
 }
 .login-btn {
-  background: #F27649;
+  background: #f27649;
   border-radius: 16rpx;
   padding: 20rpx 80rpx;
 }
@@ -276,13 +276,13 @@ function handleLogout() {
   border-radius: 24rpx;
   overflow: hidden;
   margin-bottom: 24rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
 }
 .menu-item {
   display: flex;
   align-items: center;
   padding: 28rpx 32rpx;
-  border-bottom: 1rpx solid #F5F3F0;
+  border-bottom: 1rpx solid #f5f3f0;
 }
 .menu-item:last-child {
   border-bottom: none;
@@ -294,17 +294,17 @@ function handleLogout() {
 .menu-text {
   flex: 1;
   font-size: 30rpx;
-  color: #2D2926;
+  color: #2d2926;
 }
 .menu-arrow {
   font-size: 32rpx;
-  color: #9B9590;
+  color: #9b9590;
 }
 .logout-item {
   justify-content: center;
 }
 .logout-text {
-  color: #E53935;
+  color: #e53935;
   text-align: center;
 }
 
@@ -315,6 +315,6 @@ function handleLogout() {
 }
 .version {
   font-size: 24rpx;
-  color: #9B9590;
+  color: #9b9590;
 }
 </style>

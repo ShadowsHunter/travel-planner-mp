@@ -28,11 +28,7 @@
 
     <!-- 行程列表 -->
     <view v-else class="list">
-      <view
-        v-for="trip in trips"
-        :key="trip.id"
-        class="card-swipe-wrap"
-      >
+      <view v-for="trip in trips" :key="trip.id" class="card-swipe-wrap">
         <!-- 滑动容器 -->
         <view
           class="card-swipe-inner"
@@ -84,8 +80,8 @@
     <view v-if="showCreate" class="modal-mask" @tap.self="showCreate = false">
       <view class="modal">
         <text class="modal-title">创建行程</text>
-        <input class="input" v-model="form.title" placeholder="行程标题" />
-        <input class="input" v-model="form.destination" placeholder="目的地" />
+        <input v-model="form.title" class="input" placeholder="行程标题" />
+        <input v-model="form.destination" class="input" placeholder="目的地" />
         <picker mode="date" :value="form.startDate" @change="form.startDate = $event.detail.value">
           <view class="input picker-input">
             <text>{{ form.startDate || '开始日期' }}</text>
@@ -138,7 +134,9 @@ const totalDays = computed(() =>
 )
 
 // —— 滑动删除状态 ——
-const touchState = reactive<Record<string, { startX: number; startY: number; offsetX: number; open: boolean }>>({})
+const touchState = reactive<
+  Record<string, { startX: number; startY: number; offsetX: number; open: boolean }>
+>({})
 const SWIPE_THRESHOLD = 40 // rpx，触发滑动的最小距离
 const DELETE_WIDTH = 140 // rpx，删除按钮宽度
 
@@ -218,11 +216,14 @@ onShow(() => {
 })
 
 onPullDownRefresh(() => {
-  tripStore.fetchTrips().then(() => {
-    uni.stopPullDownRefresh()
-  }).catch(() => {
-    uni.stopPullDownRefresh()
-  })
+  tripStore
+    .fetchTrips()
+    .then(() => {
+      uni.stopPullDownRefresh()
+    })
+    .catch(() => {
+      uni.stopPullDownRefresh()
+    })
 })
 
 // —— 工具函数 ——
@@ -292,7 +293,7 @@ async function handleCreate() {
 <style scoped>
 .page {
   min-height: 100vh;
-  background: #FBF9F7;
+  background: #fbf9f7;
   padding: 24rpx;
   padding-bottom: 120rpx;
 }
@@ -305,7 +306,7 @@ async function handleCreate() {
   border-radius: 20rpx;
   padding: 28rpx 40rpx;
   margin-bottom: 28rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.04);
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 }
 .stat-item {
   display: flex;
@@ -315,17 +316,17 @@ async function handleCreate() {
 .stat-num {
   font-size: 44rpx;
   font-weight: 700;
-  color: #2D2926;
+  color: #2d2926;
   font-family: 'Space Grotesk', system-ui, sans-serif;
 }
 .stat-label {
   font-size: 24rpx;
-  color: #9B9590;
+  color: #9b9590;
 }
 .stat-divider {
   width: 1rpx;
   height: 48rpx;
-  background: #E8E4E0;
+  background: #e8e4e0;
   margin: 0 40rpx;
 }
 
@@ -340,7 +341,7 @@ async function handleCreate() {
   width: 120rpx;
   height: 120rpx;
   border-radius: 50%;
-  background: #FFF0EB;
+  background: #fff0eb;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -351,11 +352,11 @@ async function handleCreate() {
 }
 .empty-text {
   font-size: 32rpx;
-  color: #6B6560;
+  color: #6b6560;
 }
 .empty-hint {
   font-size: 26rpx;
-  color: #9B9590;
+  color: #9b9590;
   margin-top: 16rpx;
 }
 
@@ -384,7 +385,7 @@ async function handleCreate() {
   top: 0;
   bottom: 0;
   width: 140rpx;
-  background: #E53935;
+  background: #e53935;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -401,7 +402,7 @@ async function handleCreate() {
   background: #fff;
   border-radius: 24rpx;
   overflow: hidden;
-  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
 }
 .card-cover {
   height: 200rpx;
@@ -416,7 +417,7 @@ async function handleCreate() {
   left: 0;
   right: 0;
   height: 100rpx;
-  background: linear-gradient(transparent, rgba(0,0,0,0.25));
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.25));
 }
 .card-dest-badge {
   position: relative;
@@ -424,7 +425,7 @@ async function handleCreate() {
   display: flex;
   align-items: center;
   gap: 8rpx;
-  background: rgba(242,118,73,0.88);
+  background: rgba(242, 118, 73, 0.88);
   padding: 8rpx 20rpx;
   border-radius: 32rpx;
   backdrop-filter: blur(4px);
@@ -445,7 +446,7 @@ async function handleCreate() {
 .card-title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #2D2926;
+  color: #2d2926;
   margin-bottom: 12rpx;
 }
 .card-date-row {
@@ -459,7 +460,7 @@ async function handleCreate() {
 }
 .card-date {
   font-size: 24rpx;
-  color: #6B6560;
+  color: #6b6560;
 }
 .card-tags {
   display: flex;
@@ -469,18 +470,18 @@ async function handleCreate() {
 }
 .card-tag {
   font-size: 22rpx;
-  color: #6B6560;
-  background: #F5F3F0;
+  color: #6b6560;
+  background: #f5f3f0;
   padding: 6rpx 16rpx;
   border-radius: 20rpx;
 }
 .card-footer {
-  border-top: 1rpx solid #F2F2F2;
+  border-top: 1rpx solid #f2f2f2;
   padding-top: 16rpx;
 }
 .card-days {
   font-size: 22rpx;
-  color: #9B9590;
+  color: #9b9590;
 }
 
 /* ── FAB ── */
@@ -491,11 +492,11 @@ async function handleCreate() {
   width: 100rpx;
   height: 100rpx;
   border-radius: 50%;
-  background: #F27649;
+  background: #f27649;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8rpx 24rpx rgba(242,118,73,0.35);
+  box-shadow: 0 8rpx 24rpx rgba(242, 118, 73, 0.35);
   z-index: 100;
 }
 .fab-icon {
@@ -508,7 +509,7 @@ async function handleCreate() {
 .modal-mask {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -523,11 +524,11 @@ async function handleCreate() {
 .modal-title {
   font-size: 36rpx;
   font-weight: 700;
-  color: #2D2926;
+  color: #2d2926;
   margin-bottom: 32rpx;
 }
 .input {
-  border: 1rpx solid #E8E4E0;
+  border: 1rpx solid #e8e4e0;
   border-radius: 16rpx;
   padding: 20rpx 24rpx;
   font-size: 28rpx;
@@ -536,7 +537,7 @@ async function handleCreate() {
 .picker-input {
   display: flex;
   align-items: center;
-  color: #6B6560;
+  color: #6b6560;
 }
 .modal-actions {
   display: flex;
@@ -553,11 +554,11 @@ async function handleCreate() {
   font-size: 30rpx;
 }
 .btn-cancel {
-  background: #F5F3F0;
-  color: #6B6560;
+  background: #f5f3f0;
+  color: #6b6560;
 }
 .btn-primary {
-  background: #F27649;
+  background: #f27649;
   color: #fff;
 }
 </style>

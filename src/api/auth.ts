@@ -20,10 +20,7 @@ export function register(
 }
 
 /** 密码登录，返回 JWT token + 用户。 */
-export function login(
-  phone: string,
-  password: string,
-): Promise<{ token: string; user: User }> {
+export function login(phone: string, password: string): Promise<{ token: string; user: User }> {
   return request.post('/auth/login', { phone, password })
 }
 

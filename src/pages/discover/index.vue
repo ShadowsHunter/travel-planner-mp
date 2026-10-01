@@ -10,13 +10,12 @@
   </view>
 </template>
 
-<script setup lang="ts">
-</script>
+<script setup lang="ts"></script>
 
 <style scoped>
 .page {
   min-height: 100vh;
-  background: #FBF9F7;
+  background: #fbf9f7;
   padding: 24rpx;
 }
 .header {
@@ -25,7 +24,7 @@
 .title {
   font-size: 44rpx;
   font-weight: 700;
-  color: #2D2926;
+  color: #2d2926;
 }
 .empty {
   display: flex;
@@ -35,11 +34,11 @@
 }
 .empty-text {
   font-size: 32rpx;
-  color: #6B6560;
+  color: #6b6560;
 }
 .empty-hint {
   font-size: 26rpx;
-  color: #9B9590;
+  color: #9b9590;
   margin-top: 16rpx;
 }
 </style>
