@@ -13,17 +13,53 @@
       </view>
     </view>
 
+    <!-- 搜索框 -->
+    <view class="search-row">
+      <view class="search-box">
+        <text class="search-icon">🔍</text>
+        <input
+          v-model="keyword"
+          class="search-input"
+          placeholder="搜索目的地"
+          confirm-type="search"
+          @confirm="searchNow"
+        />
+        <view v-if="keyword" class="search-clear" @tap="clearKeyword">
+          <text class="search-clear-icon">×</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 排序切换：date=出发日期升序（后端默认），created=创建时间倒序 -->
+    <view class="sort-seg">
+      <view class="seg-item" :class="{ active: sortBy === 'date' }" @tap="sortBy = 'date'">
+        <text>出发日期（从早到晚）</text>
+      </view>
+      <view class="seg-item" :class="{ active: sortBy === 'created' }" @tap="sortBy = 'created'">
+        <text>最新创建</text>
+      </view>
+    </view>
+
     <!-- 加载 / 空状态 -->
     <view v-if="loading && trips.length === 0" class="empty">
       <text class="empty-text">加载中...</text>
     </view>
 
     <view v-else-if="trips.length === 0" class="empty">
-      <view class="empty-icon-wrap">
-        <text class="empty-icon">✈</text>
-      </view>
-      <text class="empty-text">还没有行程</text>
-      <text class="empty-hint">点击右下角 + 创建第一个行程</text>
+      <template v-if="debouncedKeyword">
+        <view class="empty-icon-wrap">
+          <text class="empty-icon">🔍</text>
+        </view>
+        <text class="empty-text">没有找到目的地含「{{ debouncedKeyword }}」的行程</text>
+        <text class="empty-hint">换个关键词，或点 × 清空后再试试</text>
+      </template>
+      <template v-else>
+        <view class="empty-icon-wrap">
+          <text class="empty-icon">✈</text>
+        </view>
+        <text class="empty-text">还没有行程</text>
+        <text class="empty-hint">点击右下角 + 创建第一个行程</text>
+      </template>
     </view>
 
     <!-- 行程列表 -->
@@ -84,7 +120,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed } from 'vue'
+import { ref, reactive, computed, watch, onUnmounted } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import { storeToRefs } from 'pinia'
 import { useTripStore } from '../../stores/trip'
@@ -93,6 +129,46 @@ import { formatDateRange, coverGradient, tripDays } from '../../utils/trip'
 const tripStore = useTripStore()
 // store 是 reactive 对象，直接解构会丢失响应性（列表白屏的根因），必须 storeToRefs
 const { trips, loading } = storeToRefs(tripStore)
+
+// —— 搜索 / 排序 ——
+const keyword = ref('')
+const debouncedKeyword = ref('')
+const sortBy = ref<'date' | 'created'>('date')
+
+// 300ms 防抖：停顿后再发请求，避免逐字触发限流
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
+watch(keyword, (v) => {
+  if (debounceTimer) clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => {
+    debouncedKeyword.value = v.trim()
+  }, 300)
+})
+onUnmounted(() => {
+  if (debounceTimer) clearTimeout(debounceTimer)
+})
+
+/** 键盘「搜索」立即生效（跳过防抖等待） */
+function searchNow() {
+  if (debounceTimer) clearTimeout(debounceTimer)
+  debouncedKeyword.value = keyword.value.trim()
+}
+
+function clearKeyword() {
+  keyword.value = ''
+  searchNow()
+}
+
+/** 统一取数入口：onShow / 下拉刷新 / 筛选变化都走这里，保持筛选态 */
+function refresh(): Promise<void> {
+  return tripStore.fetchTrips({
+    sort: sortBy.value,
+    destination: debouncedKeyword.value || undefined,
+  })
+}
+
+watch([debouncedKeyword, sortBy], () => {
+  refresh().catch(() => {})
+})
 
 // —— 统计 ——
 const totalTrips = computed(() => trips.value.length)
@@ -185,16 +261,13 @@ function onCardTap(id: string) {
 
 // —— 页面生命周期 ——
 onShow(() => {
-  tripStore.fetchTrips().catch(() => {})
+  refresh().catch(() => {})
 })
 
 onPullDownRefresh(() => {
-  tripStore
-    .fetchTrips()
-    .then(() => {
-      uni.stopPullDownRefresh()
-    })
-    .catch(() => {
+  refresh()
+    .catch(() => {})
+    .finally(() => {
       uni.stopPullDownRefresh()
     })
 })
@@ -279,6 +352,64 @@ async function handleDelete(trip: { id: string; title: string }) {
   height: 48rpx;
   background: #e8e4e0;
   margin: 0 40rpx;
+}
+
+/* ── 搜索与排序 ── */
+.search-row {
+  margin-bottom: 20rpx;
+}
+.search-box {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 40rpx;
+  padding: 16rpx 28rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+.search-icon {
+  font-size: 26rpx;
+  margin-right: 16rpx;
+}
+.search-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: #2d2926;
+}
+.search-clear {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: #f5f3f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.search-clear-icon {
+  font-size: 28rpx;
+  color: #9b9590;
+  line-height: 1;
+}
+.sort-seg {
+  display: flex;
+  background: #efece9;
+  border-radius: 32rpx;
+  padding: 6rpx;
+  margin-bottom: 28rpx;
+}
+.seg-item {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 14rpx 0;
+  border-radius: 28rpx;
+  font-size: 24rpx;
+  color: #6b6560;
+}
+.seg-item.active {
+  background: #fff;
+  color: #f27649;
+  font-weight: 600;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
 }
 
 /* ── 空状态 ── */
