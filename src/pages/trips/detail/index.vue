@@ -147,9 +147,28 @@
           :longitude="mapCenter.lng"
           :markers="markers"
           :polyline="routeLine"
-          :scale="13"
+          :include-points="includePoints.length ? includePoints : undefined"
+          :include-padding="includePadding"
+          :scale="includePoints.length ? undefined : 13"
           show-location
+          @markertap="onMarkerTap"
         />
+        <!-- 标记信息条：类型色点 / 名称 / 地址 / 一键导航 -->
+        <view v-if="selectedMarker" class="marker-bar">
+          <view class="marker-dot" :style="{ background: typeColor(selectedMarker.type) }" />
+          <view class="marker-info">
+            <text class="marker-name">{{ selectedMarker.name }}</text>
+            <text v-if="selectedMarker.address" class="marker-addr">{{
+              selectedMarker.address
+            }}</text>
+          </view>
+          <view class="marker-nav-btn" @tap="openNavigation(selectedMarker)">
+            <text class="marker-nav-text">🧭 导航</text>
+          </view>
+          <view class="marker-close" @tap="selectedMarker = null">
+            <text>✕</text>
+          </view>
+        </view>
       </view>
     </view>
 
@@ -347,6 +366,8 @@ const searchResults = ref<PoiResult[]>([])
 const selectedPoi = ref<PoiResult | null>(null)
 const editingItemId = ref('')
 const showHeaderMenu = ref(false)
+// 地图选中的标记条目（底部信息条数据源）
+const selectedMarker = ref<TripItem | null>(null)
 
 const trip = computed(() => tripStore.current)
 const days = computed<TripDay[]>(() => trip.value?.days ?? [])
@@ -358,47 +379,130 @@ const dateRange = computed(() =>
   trip.value ? formatDateRange(trip.value.startDate, trip.value.endDate) : '',
 )
 
-// 地图中心点（取第一个有坐标的条目，或默认北京）
-const mapCenter = computed(() => {
-  const items = activeItems.value
-  for (const item of items) {
-    if (item.lat && item.lng) {
-      return { lat: Number(item.lat), lng: Number(item.lng) }
+// ── 地图增强（P4）：类型色标记 / 视野自适应 / 目的地兜底中心 ──
+
+// 目的地中心缓存（模块级）：同一目的地只搜一次——POI 搜索限流 30 次/10 分钟，失败也缓存避免重试
+const destCenterCache = new Map<string, { lat: number; lng: number } | null>()
+const destCenter = ref<{ lat: number; lng: number } | null>(null)
+
+async function ensureDestCenter() {
+  const dest = trip.value?.destination?.trim()
+  if (!dest) return
+  if (!destCenterCache.has(dest)) {
+    try {
+      const pois = await searchPOI(dest, dest)
+      const first = pois[0]
+      // 响应坐标是 7 位小数字符串，Number() 失败得 NaN 时按无结果缓存
+      const center =
+        first && !isNaN(Number(first.lat)) && !isNaN(Number(first.lng))
+          ? { lat: Number(first.lat), lng: Number(first.lng) }
+          : null
+      destCenterCache.set(dest, center)
+    } catch {
+      destCenterCache.set(dest, null) // 静默失败，回落默认中心
     }
   }
-  return { lat: 39.9042, lng: 116.4074 }
+  destCenter.value = destCenterCache.get(dest) ?? null
+}
+
+// 有坐标的条目：marker / 路线 / 视野自适应共用同一顺序（数组下标即 marker id）
+const geoItems = computed(() => activeItems.value.filter((i) => i.lat && i.lng))
+
+// marker id → 条目反查表，供点击回填信息条
+const markerItems = computed(() => {
+  const map = new Map<number, TripItem>()
+  geoItems.value.forEach((item, idx) => map.set(idx, item))
+  return map
 })
 
-// 地图标记
-const markers = computed(() => {
-  return activeItems.value
-    .filter((i) => i.lat && i.lng)
-    .map((item, idx) => ({
+// 地图中心点：第一个有坐标的条目 > 目的地中心 > 默认北京
+const mapCenter = computed(() => {
+  const first = geoItems.value[0]
+  if (first) return { lat: Number(first.lat), lng: Number(first.lng) }
+  return destCenter.value ?? { lat: 39.9042, lng: 116.4074 }
+})
+
+// 地图标记：类型 emoji 常显 label + 类型色 callout（点击才展示名称，多 marker 常显会叠）
+const markers = computed(() =>
+  geoItems.value.map((item, idx) => {
+    const meta = ITEM_TYPE_META[item.type] ?? ITEM_TYPE_META.other
+    return {
       id: idx,
       latitude: Number(item.lat),
       longitude: Number(item.lng),
       title: item.name,
-      callout: { content: item.name, display: 'ALWAYS', padding: 8, borderRadius: 4 },
+      label: {
+        content: meta.emoji,
+        bgColor: meta.color + 'E6',
+        color: '#FFFFFF',
+        fontSize: 12,
+        borderRadius: 6,
+        padding: 4,
+      },
+      callout: {
+        content: `${meta.emoji} ${item.name}`,
+        display: 'BYCLICK',
+        bgColor: meta.color,
+        color: '#FFFFFF',
+        fontSize: 12,
+        borderRadius: 6,
+        padding: 8,
+      },
       iconPath: '/static/tabbar/trips-active.png',
       width: 24,
       height: 24,
-    }))
-})
+    }
+  }),
+)
+
+// 视野自适应点集：空数组在部分基础库版本会聚焦到无效点，模板里空时不传
+const includePoints = computed(() =>
+  geoItems.value.map((i) => ({ latitude: Number(i.lat), longitude: Number(i.lng) })),
+)
+// 底部留白给标记信息条（单位 px）
+const includePadding = { top: 80, left: 40, right: 40, bottom: 160 }
 
 // 路线
 const routeLine = computed(() => {
-  const points = activeItems.value
-    .filter((i) => i.lat && i.lng)
-    .map((i) => ({ latitude: Number(i.lat), longitude: Number(i.lng) }))
+  const points = includePoints.value
   if (points.length < 2) return []
-  return [
-    {
-      points,
-      color: '#F27649',
-      width: 3,
-      dottedLine: true,
-    },
-  ]
+  return [{ points, color: '#F27649', width: 3, dottedLine: true }]
+})
+
+// 点击标记 → 信息条（markerId 在 e 或 e.detail 上，基础库版本差异）
+function onMarkerTap(e: any) {
+  const id = e?.markerId ?? e?.detail?.markerId
+  if (id == null) return
+  selectedMarker.value = markerItems.value.get(Number(id)) ?? null
+}
+
+// 一键导航：坐标是字符串必须 Number()（openLocation 只收数值）
+function openNavigation(item: TripItem) {
+  const lat = Number(item.lat)
+  const lng = Number(item.lng)
+  if (item.lat == null || item.lng == null || isNaN(lat) || isNaN(lng)) {
+    uni.showToast({ title: '该条目没有可用坐标', icon: 'none' })
+    return
+  }
+  uni.openLocation({
+    latitude: lat,
+    longitude: lng,
+    name: item.name,
+    address: item.address || item.name,
+    fail: () => uni.showToast({ title: '打开导航失败', icon: 'none' }),
+  })
+}
+
+// 切视图 / 切天 / 条目增删 → 清空选中（下标 id 映射已失效）
+watch([viewMode, () => activeItems.value.map((i) => i.id).join(',')], () => {
+  selectedMarker.value = null
+})
+
+// 进入地图且当天无坐标条目时，按目的地定位（懒加载）
+watch([viewMode, activeDayId], () => {
+  if (viewMode.value === 'map' && geoItems.value.length === 0) {
+    void ensureDestCenter()
+  }
 })
 
 // 添加表单
@@ -998,10 +1102,75 @@ function resetAddForm() {
 /* Map */
 .map-area {
   flex: 1;
+  position: relative; /* 标记信息条定位基准 */
 }
 .trip-map {
   width: 100%;
   height: 100%;
+}
+
+/* 标记信息条 */
+.marker-bar {
+  position: absolute;
+  left: 24rpx;
+  right: 24rpx;
+  bottom: 24rpx;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 20rpx 24rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.14);
+}
+.marker-dot {
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.marker-info {
+  flex: 1;
+  min-width: 0;
+}
+.marker-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #2d2926;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.marker-addr {
+  font-size: 22rpx;
+  color: #9b9590;
+  margin-top: 4rpx;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.marker-nav-btn {
+  flex-shrink: 0;
+  padding: 12rpx 24rpx;
+  background: #f27649;
+  border-radius: 12rpx;
+}
+.marker-nav-text {
+  font-size: 24rpx;
+  color: #fff;
+  font-weight: 600;
+}
+.marker-close {
+  flex-shrink: 0;
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9b9590;
+  font-size: 26rpx;
 }
 
 /* Bottom Sheet */

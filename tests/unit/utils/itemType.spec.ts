@@ -18,6 +18,12 @@ describe('ITEM_TYPE_META', () => {
     expect(labels.every((l) => l.length > 0)).toBe(true)
     expect(new Set(labels).size).toBe(labels.length)
   })
+
+  it('emoji 非空且唯一（地图 marker label 用）', () => {
+    const emojis = Object.values(ITEM_TYPE_META).map((m) => m.emoji)
+    expect(emojis.every((e) => e.length > 0)).toBe(true)
+    expect(new Set(emojis).size).toBe(emojis.length)
+  })
 })
 
 describe('ITEM_TYPES', () => {
