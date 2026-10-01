@@ -32,11 +32,18 @@ function redirectToLogin() {
   isRedirectingToLogin = true
   uni.removeStorageSync(TOKEN_KEY)
   uni.removeStorageSync(USER_KEY)
-  // 用 reLaunch 跳登录页，避免页面栈累积；完成后复位标志以便下次会话再触发
+  const done = () => {
+    isRedirectingToLogin = false
+  }
+  // reLaunch 清栈跳登录，避免页面栈累积；
+  // 工具模拟器/新基础库在冷启动期偶发 reLaunch:fail timeout（真机正常），
+  // 失败时退级 navigateTo（tabBar 页上叠登录页，登录成功 switchTab 自然清栈）。
+  // 标志只在 reLaunch 成功或兜底结束时复位，fail+complete 双回调不会提前解锁。
   uni.reLaunch({
     url: '/pages/login/index',
-    complete: () => {
-      isRedirectingToLogin = false
+    success: done,
+    fail: () => {
+      uni.navigateTo({ url: '/pages/login/index', complete: done })
     },
   })
 }
