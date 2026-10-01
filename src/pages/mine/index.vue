@@ -78,7 +78,7 @@
 
     <!-- 版本号 -->
     <view class="footer">
-      <text class="version">旅行规划 v1.0.0</text>
+      <text class="version">旅行规划 v{{ appVersion }}</text>
     </view>
   </view>
 </template>
@@ -88,9 +88,15 @@ import { computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useAuthStore } from '../../stores/auth'
 import { useTripStore } from '../../stores/trip'
+import { todayLocal } from '../../utils/trip'
+import manifest from '../../manifest.json'
 
 const auth = useAuthStore()
 const tripStore = useTripStore()
+
+// 版本号单一来源：manifest.json 的 versionName
+const appVersion = manifest.versionName
+const today = todayLocal()
 
 const avatarLetter = computed(() => {
   const n = auth.user?.nickname || auth.user?.phone || '?'
@@ -105,14 +111,13 @@ const maskedPhone = computed(() => {
   return phone
 })
 
+// YYYY-MM-DD 字符串比较即可靠；new Date('YYYY-MM-DD') 按 UTC 解析，东八区会差 8 小时
 const upcomingCount = computed(() => {
-  const now = new Date()
-  return tripStore.trips.filter((t) => new Date(t.startDate) > now).length
+  return tripStore.trips.filter((t) => t.startDate >= today).length
 })
 
 const completedCount = computed(() => {
-  const now = new Date()
-  return tripStore.trips.filter((t) => new Date(t.endDate) < now).length
+  return tripStore.trips.filter((t) => t.endDate < today).length
 })
 
 onShow(() => {
@@ -140,7 +145,7 @@ function goSettings() {
 function showAbout() {
   uni.showModal({
     title: '关于旅行规划',
-    content: '版本 1.0.0\n让每一次旅行都井井有条',
+    content: `版本 ${appVersion}\n让每一次旅行都井井有条`,
     showCancel: false,
   })
 }

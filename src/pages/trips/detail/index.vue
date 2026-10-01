@@ -308,7 +308,7 @@
 import { ref, computed, reactive } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { useTripStore } from '../../../stores/trip'
-import { formatDateRange } from '../../../utils/trip'
+import { formatDateRange, formatShortDate } from '../../../utils/trip'
 import { ITEM_TYPES, ITEM_TYPE_META } from '../../../utils/itemType'
 import { searchPOI, type PoiResult } from '../../../api/map'
 import type { TripItemType, TripItem, CreateItemPayload } from '../../../api/tripItem'
@@ -392,13 +392,16 @@ const addForm = reactive({
   notes: '',
 })
 
-// 编辑表单
+// 编辑表单（lat/lng/poiId 仅原样透传：编辑不改地理位置，但保存时必须回传，否则坐标被清空）
 const editForm = reactive({
   type: 'sight' as TripItemType,
   name: '',
   address: '',
   time: '',
   notes: '',
+  lat: null as number | null,
+  lng: null as number | null,
+  poiId: null as string | null,
 })
 
 onLoad((options) => {
@@ -436,8 +439,8 @@ function goBack() {
 }
 
 function shortDate(date: string): string {
-  const d = new Date(date)
-  return `${d.getMonth() + 1}/${d.getDate()}`
+  // 'YYYY-MM-DD' 直传 new Date() 按 UTC 解析会差 8 小时，formatShortDate 内部走本地解析
+  return formatShortDate(date)
 }
 
 function typeColor(type: TripItemType): string {
@@ -460,6 +463,10 @@ function startEdit(item: TripItem) {
   editForm.address = item.address ?? ''
   editForm.time = item.time ?? ''
   editForm.notes = item.notes ?? ''
+  // 响应里 lat/lng 是 7 位小数字符串，转换回 number 供提交
+  editForm.lat = item.lat != null ? Number(item.lat) : null
+  editForm.lng = item.lng != null ? Number(item.lng) : null
+  editForm.poiId = item.poiId ?? null
   showEditSheet.value = true
 }
 
@@ -476,6 +483,10 @@ async function handleEdit() {
       address: editForm.address || undefined,
       time: editForm.time || undefined,
       notes: editForm.notes || undefined,
+      // 坐标透传（undefined 字段序列化时被丢弃，不会作为多余字段发出去）
+      lat: editForm.lat ?? undefined,
+      lng: editForm.lng ?? undefined,
+      poiId: editForm.poiId ?? undefined,
     })
     showEditSheet.value = false
   } catch {

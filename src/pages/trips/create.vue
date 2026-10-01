@@ -125,12 +125,14 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import { useTripStore } from '../../stores/trip'
+import { todayLocal } from '../../utils/trip'
 import type { CreateTripPayload } from '../../api/trip'
 
 const tripStore = useTripStore()
 const submitting = ref(false)
 
-const today = new Date().toISOString().slice(0, 10)
+// 本地时区今天（toISOString 会按 UTC 切日，东八区早 8 点前差一天）
+const today = todayLocal()
 
 const themeSuggestions = ['自由行', '亲子游', '蜜月', '商务', '朋友聚会', '周末短途']
 const transportOptions = ['飞机', '高铁', '自驾', '大巴', '轮船', '其他']
@@ -197,7 +199,8 @@ async function handleSubmit() {
   submitting.value = true
   try {
     const trip = await tripStore.createTrip(payload)
-    uni.redirectTo({ url: `/pages/trips/detail?id=${trip.id}` })
+    // 必须用 pages.json 注册的完整路径（短路径真机失效）
+    uni.redirectTo({ url: `/pages/trips/detail/index?id=${trip.id}` })
   } catch {
     uni.showToast({ title: '创建失败', icon: 'none' })
   } finally {

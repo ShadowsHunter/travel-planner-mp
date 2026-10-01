@@ -23,7 +23,7 @@
         <text class="empty-icon">✈</text>
       </view>
       <text class="empty-text">还没有行程</text>
-      <text class="empty-hint">点击右上角 + 创建第一个行程</text>
+      <text class="empty-hint">点击右下角 + 创建第一个行程</text>
     </view>
 
     <!-- 行程列表 -->
@@ -76,42 +76,15 @@
       </view>
     </view>
 
-    <!-- 创建行程弹窗 -->
-    <view v-if="showCreate" class="modal-mask" @tap.self="showCreate = false">
-      <view class="modal">
-        <text class="modal-title">创建行程</text>
-        <input v-model="form.title" class="input" placeholder="行程标题" />
-        <input v-model="form.destination" class="input" placeholder="目的地" />
-        <picker mode="date" :value="form.startDate" @change="form.startDate = $event.detail.value">
-          <view class="input picker-input">
-            <text>{{ form.startDate || '开始日期' }}</text>
-          </view>
-        </picker>
-        <picker mode="date" :value="form.endDate" @change="form.endDate = $event.detail.value">
-          <view class="input picker-input">
-            <text>{{ form.endDate || '结束日期' }}</text>
-          </view>
-        </picker>
-        <view class="modal-actions">
-          <view class="btn btn-cancel" @tap="showCreate = false">
-            <text>取消</text>
-          </view>
-          <view class="btn btn-primary" @tap="handleCreate">
-            <text>创建</text>
-          </view>
-        </view>
-      </view>
-    </view>
-
-    <!-- 悬浮创建按钮 -->
-    <view class="fab" @tap="showCreate = true">
+    <!-- 悬浮创建按钮：直达完整创建页（单一入口） -->
+    <view class="fab" @tap="goCreate">
       <text class="fab-icon">+</text>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { reactive, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import { storeToRefs } from 'pinia'
 import { useTripStore } from '../../stores/trip'
@@ -120,14 +93,6 @@ import { formatDateRange, coverGradient, tripDays } from '../../utils/trip'
 const tripStore = useTripStore()
 // store 是 reactive 对象，直接解构会丢失响应性（列表白屏的根因），必须 storeToRefs
 const { trips, loading } = storeToRefs(tripStore)
-
-const showCreate = ref(false)
-const form = reactive({
-  title: '',
-  destination: '',
-  startDate: '',
-  endDate: '',
-})
 
 // —— 统计 ——
 const totalTrips = computed(() => trips.value.length)
@@ -141,6 +106,16 @@ const touchState = reactive<
 >({})
 const SWIPE_THRESHOLD = 40 // rpx，触发滑动的最小距离
 const DELETE_WIDTH = 140 // rpx，删除按钮宽度
+
+// rpx 换算比例缓存：getSystemInfoSync 有同步桥开销，touchmove 高频路径只取一次
+let rpxRatio = 0
+function getRpxRatio(): number {
+  if (!rpxRatio) {
+    const { windowWidth } = uni.getSystemInfoSync()
+    rpxRatio = 750 / windowWidth
+  }
+  return rpxRatio
+}
 
 function ensureState(id: string) {
   if (!touchState[id]) touchState[id] = { startX: 0, startY: 0, offsetX: 0, open: false }
@@ -173,18 +148,14 @@ function onTouchMove(e: TouchEvent, id: string) {
   const dy = e.touches[0].clientY - s.startY
   // 纵向滑动距离大于横向时忽略（避免与滚动冲突）
   if (Math.abs(dy) > Math.abs(dx)) return
+  const ratio = getRpxRatio()
   // 只允许左滑（dx < 0）
   if (dx < 0) {
-    // rpx 转换：屏幕宽度 750rpx，实际宽度用 uni.getSystemInfoSync
-    const { windowWidth } = uni.getSystemInfoSync()
-    const rpxRatio = 750 / windowWidth
-    s.offsetX = Math.max(-DELETE_WIDTH, dx * rpxRatio)
+    s.offsetX = Math.max(-DELETE_WIDTH, dx * ratio)
   } else {
     // 右滑：如果已打开则关闭
     if (s.open) {
-      const { windowWidth } = uni.getSystemInfoSync()
-      const rpxRatio = 750 / windowWidth
-      s.offsetX = Math.min(0, -DELETE_WIDTH + dx * rpxRatio)
+      s.offsetX = Math.min(0, -DELETE_WIDTH + dx * ratio)
     } else {
       s.offsetX = 0
     }
@@ -245,6 +216,11 @@ function goDetail(id: string) {
   uni.navigateTo({ url: `/pages/trips/detail/index?id=${id}` })
 }
 
+/** FAB 直达完整创建页（必须用 pages.json 注册的完整路径） */
+function goCreate() {
+  uni.navigateTo({ url: '/pages/trips/create' })
+}
+
 async function handleDelete(trip: { id: string; title: string }) {
   uni.showModal({
     title: '确认删除',
@@ -262,33 +238,6 @@ async function handleDelete(trip: { id: string; title: string }) {
       }
     },
   })
-}
-
-async function handleCreate() {
-  if (!form.title || !form.destination || !form.startDate || !form.endDate) {
-    uni.showToast({ title: '请填写完整', icon: 'none' })
-    return
-  }
-  if (form.endDate < form.startDate) {
-    uni.showToast({ title: '结束日期不能早于开始日期', icon: 'none' })
-    return
-  }
-  try {
-    const trip = await tripStore.createTrip({
-      title: form.title,
-      destination: form.destination,
-      startDate: form.startDate,
-      endDate: form.endDate,
-    })
-    showCreate.value = false
-    form.title = ''
-    form.destination = ''
-    form.startDate = ''
-    form.endDate = ''
-    uni.navigateTo({ url: `/pages/trips/detail?id=${trip.id}` })
-  } catch {
-    uni.showToast({ title: '创建失败', icon: 'none' })
-  }
 }
 </script>
 
@@ -505,62 +454,5 @@ async function handleCreate() {
   color: #fff;
   font-size: 52rpx;
   line-height: 1;
-}
-
-/* ── Modal ── */
-.modal-mask {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
-.modal {
-  width: 85%;
-  background: #fff;
-  border-radius: 24rpx;
-  padding: 40rpx;
-}
-.modal-title {
-  font-size: 36rpx;
-  font-weight: 700;
-  color: #2d2926;
-  margin-bottom: 32rpx;
-}
-.input {
-  border: 1rpx solid #e8e4e0;
-  border-radius: 16rpx;
-  padding: 20rpx 24rpx;
-  font-size: 28rpx;
-  margin-bottom: 20rpx;
-}
-.picker-input {
-  display: flex;
-  align-items: center;
-  color: #6b6560;
-}
-.modal-actions {
-  display: flex;
-  gap: 20rpx;
-  margin-top: 16rpx;
-}
-.btn {
-  flex: 1;
-  height: 80rpx;
-  border-radius: 16rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 30rpx;
-}
-.btn-cancel {
-  background: #f5f3f0;
-  color: #6b6560;
-}
-.btn-primary {
-  background: #f27649;
-  color: #fff;
 }
 </style>

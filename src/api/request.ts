@@ -24,6 +24,23 @@ function buildUrl(url: string, params?: Record<string, string | number | undefin
   return qs ? `${url}?${qs}` : url
 }
 
+// 401 并发去重：多个请求同时 401 时只触发一次 reLaunch
+let isRedirectingToLogin = false
+
+function redirectToLogin() {
+  if (isRedirectingToLogin) return
+  isRedirectingToLogin = true
+  uni.removeStorageSync(TOKEN_KEY)
+  uni.removeStorageSync(USER_KEY)
+  // 用 reLaunch 跳登录页，避免页面栈累积；完成后复位标志以便下次会话再触发
+  uni.reLaunch({
+    url: '/pages/login/index',
+    complete: () => {
+      isRedirectingToLogin = false
+    },
+  })
+}
+
 function request<T = any>(opts: RequestOptions): Promise<T> {
   const token = uni.getStorageSync(TOKEN_KEY) as string
   const header: Record<string, string> = { 'Content-Type': 'application/json' }
@@ -40,10 +57,7 @@ function request<T = any>(opts: RequestOptions): Promise<T> {
         const status = res.statusCode
         const data = res.data as T
         if (status === 401) {
-          uni.removeStorageSync(TOKEN_KEY)
-          uni.removeStorageSync(USER_KEY)
-          // 用 reLaunch 跳登录页，避免页面栈累积
-          uni.reLaunch({ url: '/pages/login/index' })
+          redirectToLogin()
           reject(new Error('未登录'))
           return
         }

@@ -6,21 +6,12 @@ onLaunch(async () => {
   const auth = useAuthStore()
   if (auth.isLoggedIn) {
     const ok = await auth.checkAuth().catch(() => false)
-    if (!ok) {
-      // token 无效，跳登录（但不在登录页时才跳）
-      const pages = getCurrentPages()
-      const current = pages[pages.length - 1]
-      if (current?.route !== 'pages/login/index' && current?.route !== 'pages/register/index') {
-        uni.reLaunch({ url: '/pages/login/index' })
-      }
-    }
-  } else {
-    // 无 token，跳登录
-    const pages = getCurrentPages()
-    const current = pages[pages.length - 1]
-    if (current?.route !== 'pages/login/index' && current?.route !== 'pages/register/index') {
-      uni.reLaunch({ url: '/pages/login/index' })
-    }
+    if (ok) return
+  }
+  // 未登录或 token 失效：已在登录/注册页则不重复 reLaunch
+  const route = getCurrentPages().pop()?.route ?? ''
+  if (route !== 'pages/login/index' && route !== 'pages/register/index') {
+    uni.reLaunch({ url: '/pages/login/index' })
   }
 })
 </script>
