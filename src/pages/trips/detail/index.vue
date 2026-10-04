@@ -760,8 +760,11 @@ function resetAddForm() {
 </script>
 
 <style scoped>
+/* 固定高度外壳：min-height 下 flex:1 在真机对原生 map 组件高度解析失败（塌成窄条），
+   改用确定高度 100vh；列表/地图视图各自内部滚动 */
 .page {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: #fbf9f7;
   display: flex;
   flex-direction: column;
