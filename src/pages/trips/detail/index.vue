@@ -148,6 +148,7 @@
       <view v-else class="map-area">
         <map
           class="trip-map"
+          :style="mapHeight ? { height: mapHeight + 'px' } : undefined"
           :latitude="mapCenter.lat"
           :longitude="mapCenter.lng"
           :markers="markers"
@@ -346,7 +347,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, watch } from 'vue'
+import { ref, computed, reactive, watch, nextTick } from 'vue'
 import { onLoad, onShareAppMessage } from '@dcloudio/uni-app'
 import { useTripStore } from '../../../stores/trip'
 import { formatDateRange, formatShortDate } from '../../../utils/trip'
@@ -498,9 +499,31 @@ function openNavigation(item: TripItem) {
   })
 }
 
+// 真机地图高度：原生 map 组件不认 flex:1/百分比高度的链路（真机塌成窄条，模拟器正常），
+// 进入地图视图时量出容器顶部位置，用 windowHeight - top 算出显式 px 高度直接怼给 map。
+// 量 top 而不是量 height：即便 map-area 自身塌陷，top 位置仍正确，不受循环影响。
+const mapHeight = ref(0)
+
+function measureMapArea() {
+  uni
+    .createSelectorQuery()
+    .select('.map-area')
+    .boundingClientRect((rect) => {
+      // uni 类型标注回调参数可能为数组，单选择器实际返回单个 NodeInfo，收窄取 top
+      if (!rect || Array.isArray(rect) || rect.top == null) return
+      const win = uni.getWindowInfo()
+      mapHeight.value = Math.max(Math.round(win.windowHeight - rect.top), 200)
+    })
+    .exec()
+}
+
 // 切视图 / 切天 / 条目增删 → 清空选中（下标 id 映射已失效）
 watch([viewMode, () => activeItems.value.map((i) => i.id).join(',')], () => {
   selectedMarker.value = null
+  if (viewMode.value === 'map') {
+    // v-else 渲染完成后量（nextTick + 异步查询双保险）
+    nextTick(() => setTimeout(measureMapArea, 30))
+  }
 })
 
 // 进入地图且当天无坐标条目时，按目的地定位（懒加载）
