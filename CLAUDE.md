@@ -34,7 +34,7 @@ uni-app（Vue 3 + TS + Pinia）编译微信小程序（仅 mp-weixin 目标）�
 
 - 页面跳转必须用 pages.json 注册的完整路径（如 pages/trips/detail/index）；已知坑：create.vue 用短路径 pages/trips/detail，真机失效。
 - tabBar 页面只能 uni.switchTab 跳转，不能 navigateTo。
-- manifest appid 为空：DevTools 用 touristappid；真机预览需 https://qinzilv.cn 加入 request 合法域名。
+- manifest 已配正式 appid（wx223521f8d5cf21ae）；真机预览需 https://qinzilv.cn 在 mp 后台「开发设置 → 服务器域名」的 request 合法域名里。
 - 样式用 rpx + App.vue 里的 CSS 变量（token 见 docs/DESIGN.md）；不引入 UI 组件库 / axios / vue-router。
 
 ## 提交与风格
