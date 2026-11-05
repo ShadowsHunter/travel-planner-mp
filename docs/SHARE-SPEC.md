@@ -46,7 +46,7 @@
 - 工具栏右侧加两个按钮：「海报」（tap → generatePoster）、「分享」（`<button open-type="share">`，绿色系 #E8F5E9/#2E7D32；海报按钮 #FFF3EE/#F27649）
 - `loadTrip` 成功后异步预取 `shareToken`（静默失败，不阻塞页面）
 - `onShareAppMessage()`：`{ title: trip.title, path: shareToken ? '/pages/trip-view/index?token=' + shareToken : '/pages/trips/index' }`（无 token 降级到列表页）
-- 海报：隐藏 canvas（`type="2d"`，`position:fixed; left:-9999px`）→ `buildPosterLayout` → `uni.createCanvasContext('posterCanvas', getCurrentInstance()?.proxy)` → `ctx.draw` → 300ms 后 `canvasToTempFilePath` → `saveImageToPhotosAlbum`，toast 结果
+- 海报：隐藏 canvas（旧版 canvas-id 接口，`position:fixed; left:-9999px`）→ `buildPosterLayout` → `uni.createCanvasContext('posterCanvas', posterInstance)` → `ctx.draw` → 300ms 后 `canvasToTempFilePath`（destWidth/destHeight 按 750 设计稿导出）→ `saveImageToPhotosAlbum`，toast 结果
 
 ### 3.3 poster.ts（纯函数）
 - `textWidth(str)`：中文/全角=2，半角=1

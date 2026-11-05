@@ -62,3 +62,37 @@ export function updateTrip(id: string, data: UpdateTripPayload): Promise<Trip> {
 export function deleteTrip(id: string): Promise<{ success: boolean }> {
   return request.delete(`/trips/${id}`)
 }
+// ---------- 分享 ----------
+// 后端契约：POST /trips/:id/share 需登录，幂等（已有 token 复用）；
+// GET /trips/shared/:token 免登录，404 = 分享不存在或已失效。
+
+// 类型定义（后端响应白名单字段，无 userId/nickname/phone）
+export interface SharedTripItem {
+  type: string // 'sight' | 'food' | 'hotel' | 'transport' | 'other'
+  name: string
+  address: string | null
+  time: string | null
+  notes: string | null
+  sortOrder: number
+}
+
+export interface SharedTripDay {
+  dayNumber: number
+  date: string
+  items: SharedTripItem[]
+}
+
+export interface SharedTrip {
+  id: string
+  title: string
+  destination: string
+  days: SharedTripDay[]
+}
+
+export function shareTrip(id: string): Promise<{ token: string }> {
+  return request.post(`/trips/${id}/share`)
+}
+
+export function getSharedTrip(token: string): Promise<SharedTrip> {
+  return request.get(`/trips/shared/${token}`)
+}

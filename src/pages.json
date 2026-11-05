@@ -44,6 +44,12 @@
         "navigationStyle": "custom",
         "navigationBarTitleText": ""
       }
+    },
+    {
+      "path": "pages/trip-view/index",
+      "style": {
+        "navigationBarTitleText": "行程分享"
+      }
     }
   ],
   "globalStyle": {

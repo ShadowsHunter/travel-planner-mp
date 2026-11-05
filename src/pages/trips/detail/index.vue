@@ -75,11 +75,21 @@
 
       <!-- 列表视图 -->
       <view v-if="viewMode === 'list'" class="list-area">
-        <!-- 排序模式切换 -->
+        <!-- 排序模式切换 + 分享工具（海报 / 转发好友） -->
         <view class="list-toolbar">
           <text class="item-count">{{ activeItems.length }} 个条目</text>
-          <view class="sort-toggle" @tap="sortMode = !sortMode">
-            <text class="sort-text">{{ sortMode ? '完成排序' : '排序' }}</text>
+          <view class="toolbar-actions">
+            <view class="sort-toggle" @tap="sortMode = !sortMode">
+              <text class="sort-text">{{ sortMode ? '完成排序' : '排序' }}</text>
+            </view>
+            <!-- 海报：生成行程海报并保存到相册 -->
+            <view class="tool-btn poster-btn" @tap="generatePoster">
+              <text class="tool-btn-text poster-btn-text">海报</text>
+            </view>
+            <!-- 分享：必须用 button open-type 才能拉起转发，走 onShareAppMessage -->
+            <button class="tool-btn share-btn" open-type="share">
+              <text class="tool-btn-text share-btn-text">分享</text>
+            </button>
           </view>
         </view>
 
@@ -343,18 +353,27 @@
         </view>
       </view>
     </view>
+
+    <!-- 海报画布：旧版 canvas API（canvas-id + createCanvasContext），离屏隐藏不占布局 -->
+    <canvas
+      canvas-id="posterCanvas"
+      style="position: fixed; left: -9999px; top: 0;"
+      :style="{ width: posterSize.w + 'px', height: posterSize.h + 'px' }"
+    />
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, watch, nextTick } from 'vue'
+import { ref, computed, reactive, watch, nextTick, getCurrentInstance } from 'vue'
 import { onLoad, onShareAppMessage } from '@dcloudio/uni-app'
 import { useTripStore } from '../../../stores/trip'
 import { formatDateRange, formatShortDate } from '../../../utils/trip'
 import { ITEM_TYPES, ITEM_TYPE_META } from '../../../utils/itemType'
 import { searchPOI, type PoiResult } from '../../../api/map'
 import type { TripItemType, TripItem, CreateItemPayload } from '../../../api/tripItem'
-import type { TripDay } from '../../../api/trip'
+import { shareTrip, type TripDay } from '../../../api/trip'
+import { buildPosterLayout, POSTER_WIDTH } from '../../../utils/poster'
+import type { PosterInput } from '../../../utils/poster'
 
 const tripStore = useTripStore()
 
@@ -374,6 +393,13 @@ const editingItemId = ref('')
 const showHeaderMenu = ref(false)
 // 地图选中的标记条目（底部信息条数据源）
 const selectedMarker = ref<TripItem | null>(null)
+// 分享 token（loadTrip 成功后静默预取；无 token 时转发降级到列表页）
+const shareToken = ref<string | null>(null)
+// 海报生成防重入标志 + 画布实际 px 尺寸（750 设计稿按屏宽等比换算后动态设置）
+const generating = ref(false)
+const posterSize = ref({ w: 0, h: 0 })
+// setup 同步期缓存组件实例：getCurrentInstance() 仅 setup 执行期有效，事件/异步回调里拿不到
+const posterInstance = getCurrentInstance()?.proxy
 
 const trip = computed(() => tripStore.current)
 const days = computed<TripDay[]>(() => trip.value?.days ?? [])
@@ -565,16 +591,14 @@ onLoad((options) => {
   }
 })
 
-// 分享：转发卡片落到本页详情；接收方非属主时后端 404，由已有 error 分支兜底
-onShareAppMessage(() => {
-  if (trip.value) {
-    return {
-      title: `「${trip.value.title}」行程邀你同游`,
-      path: `/pages/trips/detail/index?id=${tripId.value}`,
-    }
-  }
-  return { title: '旅行规划', path: '/pages/trips/index' }
-})
+// 分享（SHARE-SPEC 3.2）：有 token 落到只读分享页（免登录可看），无 token 降级到行程列表页；
+// ⋯ 菜单里的「分享给好友」button（open-type=share）走同一回调，自动生效
+onShareAppMessage(() => ({
+  title: trip.value?.title || '旅行规划',
+  path: shareToken.value
+    ? '/pages/trip-view/index?token=' + shareToken.value
+    : '/pages/trips/index',
+}))
 
 async function loadTrip(id: string) {
   try {
@@ -582,6 +606,10 @@ async function loadTrip(id: string) {
     if (t?.days?.length) {
       activeDayId.value = t.days[0].id
     }
+    // 分享 token 静默预取：不阻塞页面、失败不提示（onShareAppMessage 降级到列表页）
+    shareTrip(id)
+      .then((res) => (shareToken.value = res.token))
+      .catch(() => {})
   } catch {
     error.value = '行程不存在或无访问权限'
   } finally {
@@ -636,6 +664,81 @@ function confirmDeleteTrip() {
       }
     },
   })
+}
+
+// ── 海报生成（SHARE-SPEC 3.2）：布局纯函数产出绘制指令 → 旧版 canvas 逐条绘制 → 导出 → 存相册 ──
+
+/** 海报流程统一 toast（icon:none 才能显示中文长文案） */
+function posterToast(title: string) {
+  uni.showToast({ title, icon: 'none' })
+}
+
+async function generatePoster() {
+  if (generating.value) return
+  const t = trip.value
+  if (!t) return
+  generating.value = true
+  try {
+    const input: PosterInput = {
+      title: t.title,
+      destination: t.destination,
+      startDate: t.startDate,
+      endDate: t.endDate,
+      coverColor: t.coverColor || '#F27649',
+      days: t.days ?? [],
+    }
+    const layout = buildPosterLayout(input)
+    // 海报坐标系为 750 宽设计稿（同 rpx），按当前屏宽换算为实际 px
+    const scale = uni.getWindowInfo().windowWidth / POSTER_WIDTH
+    posterSize.value = { w: layout.width * scale, h: layout.height * scale }
+    // posterSize 经异步 setData 生效，等样式应用到 canvas 节点后再绘制，避免画布仍为 0×0 的竞态
+    await nextTick()
+    await new Promise((resolve) => setTimeout(resolve, 50))
+
+    const ctx = uni.createCanvasContext('posterCanvas', posterInstance)
+    for (const op of layout.ops) {
+      if (op.op === 'fillRect') {
+        ctx.setFillStyle(op.color)
+        ctx.fillRect(op.x * scale, op.y * scale, op.w * scale, op.h * scale)
+      } else {
+        ctx.setFillStyle(op.color)
+        ctx.setFontSize(op.fontSize * scale)
+        ctx.fillText(op.text, op.x * scale, op.y * scale)
+      }
+    }
+    ctx.draw(false, () => {
+      // draw 异步上屏，延迟 300ms 再导出，避免截到空白帧
+      setTimeout(() => {
+        uni.canvasToTempFilePath(
+          {
+            canvasId: 'posterCanvas',
+            // 按 750 设计稿原始尺寸导出，高分屏不糊
+            destWidth: layout.width,
+            destHeight: layout.height,
+            success: (r) => {
+              uni.saveImageToPhotosAlbum({
+                filePath: r.tempFilePath,
+                success: () => posterToast('海报已保存到相册'),
+                fail: () => posterToast('保存失败，请检查相册权限'),
+                // 保存流程结束（无论成败）才解锁防重入
+                complete: () => {
+                  generating.value = false
+                },
+              })
+            },
+            fail: () => {
+              posterToast('生成海报失败')
+              generating.value = false
+            },
+          },
+          posterInstance,
+        )
+      }, 300)
+    })
+  } catch {
+    // 同步异常兜底解锁（buildPosterLayout 抛错等路径）
+    generating.value = false
+  }
 }
 
 function shortDate(date: string): string {
@@ -1016,6 +1119,43 @@ function resetAddForm() {
   font-size: 24rpx;
   color: #f27649;
   font-weight: 600;
+}
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+/* 工具栏小按钮：与 sort-toggle 同风格；button 原生默认样式（边框/外边距/行高）需 reset */
+.tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8rpx 20rpx;
+  border-radius: 8rpx;
+  margin: 0;
+  border: none;
+  font-size: inherit;
+  line-height: 1.4;
+  box-sizing: border-box;
+}
+.tool-btn::after {
+  border: none;
+}
+.tool-btn-text {
+  font-size: 24rpx;
+  font-weight: 600;
+}
+.poster-btn {
+  background: #fff3ee;
+}
+.poster-btn-text {
+  color: #f27649;
+}
+.share-btn {
+  background: #e8f5e9;
+}
+.share-btn-text {
+  color: #2e7d32;
 }
 
 /* Empty */
